@@ -1,27 +1,40 @@
 # -*- coding: utf-8 -*-
-# [CHECKPOINT-1 | STATUS: Active | Title: Whiteboard Shape | Must-Preserve: whiteboard() function signature, use of RoundedRectangle | Notes: Defines the main visual container for the theory part.]
-# [CHECKPOINT-2 | STATUS: Active | Title: Layout Constants & Notes | Must-Preserve: note_stack() function, LEFT_W, RIGHT_X, TOP_Y constants, x-range in Axes | Notes: Governs the positioning of the graph and the right-hand text annotations.]
-# [CHECKPOINT-3 | STATUS: Active | Title: Narration Pacing | Must-Preserve: narr_time() function logic | Notes: Ties animation run_time to voiceover duration to maintain synchronization.]
-# [CHECKPOINT-4 | STATUS: Active | Title: Right-Column Note Style | Must-Preserve: note_stack returns VGroup without a background panel | Notes: Ensures notes are clean callouts, not a solid block.]
-# [CHECKPOINT-5 | STATUS: Deprecated | Title: Redundant Checkpoint | Must-Preserve: N/A | Notes: Original file had no CHECKPOINT-5.]
-# [CHECKPOINT-6 | STATUS: Active | Title: Piper Speech Service | Must-Preserve: PiperService class, use of local piper.exe and ffmpeg.exe | Notes: Core component for generating voiceovers from text.]
-# [CHECKPOINT-7 | STATUS: Active | Title: Safe TeX Coloring | Must-Preserve: safe_color_by_tex() function logic | Notes: Prevents crashes when trying to color a TeX string that doesn't exist in a mobject.]
-# [CHECKPOINT-8 | STATUS: Deprecated | Title: Redundant Checkpoint | Must-Preserve: N/A | Notes: Original file had no CHECKPOINT-8.]
-# [CHECKPOINT-9 | STATUS: Active | Title: Whiteboard Border Style | Must-Preserve: board and frame RoundedRectangles in whiteboard() | Notes: Specifies the visual look of the whiteboard.]
-# [CHECKPOINT-10 | STATUS: Active | Title: Global Determinism | Must-Preserve: random.seed(7), config.frame_rate=30 | Notes: Ensures that repeated renders produce identical output.]
-# [CHECKPOINT-11 | STATUS: Active | Title: Debug Harness | Must-Preserve: DEBUG flag, _guard_* functions, _set_determinism() | Notes: Provides infrastructure for regression testing and validation.]
-# [CHECKPOINT-12 | STATUS: Active | Title: Hotfix for NameError | Must-Preserve: USE_PIPER flag, nullcontext import | Notes: Fixes a NameError by importing nullcontext and defining the USE_PIPER toggle.]
-# [CHECKPOINT-13 | STATUS: Active | Title: Whiteboard Text Layout | Must-Preserve: Split reflection rules, adjusted eraser path | Notes: Fixes text overflow on the whiteboard by reformatting bullets for better readability.]
+# ==============================================================================
+# --- ACTIVE ---
+# [CHECKPOINT-A | STATUS: Active | Title: Determinism & Consistency | Must-Preserve: random.seed(7), config settings | Notes: Ensures reproducible output.]
+# [CHECKPOINT-B | STATUS: Active | Title: Regression Guard & Debugging | Must-Preserve: DEBUG flag, _guard_* functions | Notes: Core infrastructure for testing and validation.]
+# [CHECKPOINT-C | STATUS: Active | Title: Readability & Accessibility | Must-Preserve: safe_color_by_tex(), note_stack(), clear layouts, constrained captions | Notes: Umbrella for visual clarity and professional presentation.]
+# [CHECKPOINT-D | STATUS: Active | Title: Whiteboard Component | Must-Preserve: Dynamic sizing, z-index layering, elegant text dissolve | Notes: Governs the entire whiteboard intro sequence, including the new aesthetic transition.]
+# [CHECKPOINT-E | STATUS: Active | Title: Main Scene Layout | Must-Preserve: Static grid, responsive right column, graph parameters, caption below graph | Notes: Defines the primary two-column layout of the main animation.]
+# [CHECKPOINT-F | STATUS: Active | Title: Piper Voiceover Service | Must-Preserve: PiperService class, ffmpeg command, USE_PIPER flag | Notes: Manages all text-to-speech functionality.]
+# [CHECKPOINT-G | STATUS: Active | Title: Animation Pacing & Aesthetics | Must-Preserve: narr_time(), smoothed final path | Notes: Governs the timing and visual flow of the animation.]
+# ==============================================================================
+# --- ARCHIVE ---
+# [CHECKPOINT-1 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-D.]
+# [CHECKPOINT-9 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-D.]
+# [CHECKPOINT-13 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-D.]
+# [CHECKPOINT-15 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-D.]
+# [CHECKPOINT-16 | STATUS: Archived Hotfix (2025-08-29) | Notes: Z-Index bug fixed, now part of C-D.]
+# [CHECKPOINT-2 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-E.]
+# [CHECKPOINT-4 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-C.]
+# [CHECKPOINT-22 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-E.]
+# [CHECKPOINT-23 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-E.]
+# [CHECKPOINT-24 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-E.]
+# [CHECKPOINT-5 | STATUS: Deprecated (2025-08-29)]
+# [CHECKPOINT-8 | STATUS: Deprecated (2025-08-29)]
+# [CHECKPOINT-12 | STATUS: Archived Hotfix (2025-08-29) | Notes: NameError fixed, now part of C-F.]
+# [CHECKPOINT-14 | STATUS: Archived Hotfix (2025-08-29) | Notes: FFmpeg RuntimeError fixed, now part of C-F.]
+# ==============================================================================
 
 from __future__ import annotations
 from manim import *
 from manim_voiceover import VoiceoverScene
 from manim_voiceover.services.base import SpeechService
 import os, subprocess, glob, numpy as np, random
-from contextlib import nullcontext # CHECKPOINT-12 Hotfix
+from contextlib import nullcontext
 
 # =============================
-# Debug Harness
+# Debug Harness (CHECKPOINT-B)
 # =============================
 DEBUG = False
 
@@ -45,12 +58,12 @@ if DEBUG:
     _set_determinism()
 
 # =============================
-# Globals / Config
+# Globals / Config (CHECKPOINT-A)
 # =============================
-USE_PIPER = True # CHECKPOINT-12 Hotfix
-random.seed(7)  # CHECKPOINT-10
+USE_PIPER = True
+random.seed(7)
 config.quality = "example_quality"
-config.frame_rate = 30  # CHECKPOINT-10
+config.frame_rate = 30
 config.background_color = "#0e1a25"  # deep slate
 
 # Palette
@@ -59,30 +72,27 @@ PATH_COLOR  = "#9CDCEB"
 FINAL_COLOR = "#a9dc76"
 AXIS_COLOR  = "#E6E6E6"
 GRID_COLOR  = "#6d7a86"
-Y_AXIS_GLOW = "#49A88F"  # inside (horizontal) cues
-X_AXIS_GLOW = "#8F3931"  # outside (vertical) cues
+Y_AXIS_GLOW = "#49A88F"
+X_AXIS_GLOW = "#8F3931"
 TEXT_COLOR  = WHITE
 
 # =============================
-# Voice & pacing helpers
+# Voice & pacing helpers (CHECKPOINT-G)
 # =============================
 VOICE_TEMPO = 1.00
 BASE_PAD    = 0.35
 HOLD_PAD    = 0.50
 
 def narr_time(tr, min_rt=0.9, cap=2.2, extra=BASE_PAD):
-    """Tie motion to speech without dragging visuals. (CHECKPOINT-3)"""
+    """Tie motion to speech without dragging visuals."""
     d = getattr(tr, "duration", 0.0)
     return max(min_rt, min(d + extra, cap))
 
 # =============================
-# Piper SpeechService
+# Piper SpeechService (CHECKPOINT-F)
 # =============================
 class PiperService(SpeechService):
-    """
-    Uses piper.exe to synthesize WAV, then converts to MP3 via bundled ffmpeg.
-    (CHECKPOINT-6)
-    """
+    """Uses piper.exe to synthesize WAV, then converts to MP3 via bundled ffmpeg."""
     def __init__(self, piper_path: str, model_path: str, speaker: int | None = None, tempo: float = 1.0, **kwargs):
         super().__init__(**kwargs)
         self.piper_path = piper_path
@@ -102,10 +112,8 @@ class PiperService(SpeechService):
 
     def _ffmpeg_atempo_args(self):
         t = self.tempo
-        if abs(t - 1.0) < 1e-3:
-            return []
-        if 0.5 <= t <= 2.0:
-            return ["-af", f"atempo={t}"]
+        if abs(t - 1.0) < 1e-3: return []
+        if 0.5 <= t <= 2.0: return ["-af", f"atempo={t}"]
         import math
         a = math.sqrt(max(0.01, min(4.0, t)))
         return ["-af", f"atempo={a},atempo={a}"]
@@ -118,7 +126,6 @@ class PiperService(SpeechService):
         wav_path = os.path.join(cache_dir, stem + ".wav")
         mp3_path = os.path.join(cache_dir, stem + ".mp3")
 
-        # 1) Synthesize WAV with Piper
         cmd = [self.piper_path, "--model", self.model_path, "--output_file", wav_path]
         if self.speaker is not None:
             cmd += ["--speaker", str(self.speaker)]
@@ -131,10 +138,9 @@ class PiperService(SpeechService):
                 "If you see 0xC0000135, install the MSVC 2015–2022 Redistributable (x64 & x86)."
             )
 
-        # 2) WAV -> MP3 for accurate duration
-        if os.path.exists(mp3_path):
-            os.remove(mp3_path)
-        ff = [self.ffmpeg_path, "-y", "-v", "error", "i", wav_path] + self._ffmpeg_atempo_args() + \
+        if os.path.exists(mp3_path): os.remove(mp3_path)
+        
+        ff = [self.ffmpeg_path, "-y", "-v", "error", "-i", wav_path] + self._ffmpeg_atempo_args() + \
              ["-acodec", "libmp3lame", "-b:a", "192k", mp3_path]
         proc2 = subprocess.run(ff, capture_output=True)
         if proc2.returncode != 0 or not os.path.exists(mp3_path):
@@ -148,7 +154,7 @@ class PiperService(SpeechService):
         return {"path": mp3_path, "original_audio": rel_mp3, "input_data": {"input_text": text}}
 
 # =============================
-# Teacher-style VO text
+# Voiceover Content
 # =============================
 VO = {
     "theory": (
@@ -172,55 +178,43 @@ VO = {
 }
 
 # =============================
-# Utilities (layout & highlighting)
+# Utilities (CHECKPOINT-C)
 # =============================
-def whiteboard(rect_pad=0.55) -> tuple[RoundedRectangle, RoundedRectangle]:
-    """Large white board with border. (CHECKPOINT-1,9)"""
-    board = RoundedRectangle(corner_radius=0.4, stroke_width=3, color=GREY_B, fill_color=WHITE, fill_opacity=1)
-    board.set_width(config.frame_width - 2*rect_pad)
-    board.set_height(config.frame_height - 1.2)
-    board.to_edge(UP, buff=0.35)
+def whiteboard(
+    width: float, height: float, rect_pad: float = 0.55
+) -> tuple[RoundedRectangle, RoundedRectangle]:
+    """Large white board with border."""
+    board = RoundedRectangle(
+        width=width, height=height, corner_radius=0.4,
+        stroke_width=3, color=GREY_B, fill_color=WHITE, fill_opacity=1,
+    )
     frame = RoundedRectangle(corner_radius=0.4, stroke_width=5, color=GREY_E)
     frame.match_width(board).match_height(board).move_to(board)
     return board, frame
 
 def safe_color_by_tex(m: Mobject, tokens: list[str], color: ManimColor) -> Mobject:
-    """Highlight using Manim (not LaTeX \color). (CHECKPOINT-7)"""
+    """Highlight using Manim (not LaTeX \color)."""
     for t in tokens:
         try:
             m.set_color_by_tex(t, color)
-        except Exception:
-            pass
+        except Exception: pass
     return m
 
-def note_stack(x_right: float, top_y: float, *items: Mobject) -> VGroup:
-    """Right-column stack with airy spacing; no background panel. (CHECKPOINT-2,4)"""
-    y = top_y
-    blocks = []
-    for it in items:
-        it = it.copy().scale(0.9)
-        it.move_to([x_right, y, 0]).align_to([x_right, y, 0], LEFT)
-        it.set_z_index(3)
-        pad = 0.16
-        rr = RoundedRectangle(corner_radius=0.14, stroke_width=1.2, color=GREY_E)
-        rr.set_width(it.width + 2*pad)
-        rr.set_height(it.height + 2*pad)
-        rr.move_to(it)
-        group = VGroup(rr, it)
-        blocks.append(group)
-        y -= (it.height + 0.5)
-    return VGroup(*blocks)
+def note_stack(*items: Mobject) -> VGroup:
+    """Stacks items vertically with left alignment and airy spacing."""
+    group = VGroup()
+    for item in items:
+        group.add(item.copy().scale(0.95))
+    group.arrange(DOWN, aligned_edge=LEFT, buff=0.7)
+    return group
 
 # =============================
 # Scene
 # =============================
 class FinalAnimation(VoiceoverScene, Scene):
-    LEFT_W  = 6.2   # reserved width for the plane
-    RIGHT_X = 2.7   # x coord where notes are placed (screen coords)
-    TOP_Y   = 2.8
+    LEFT_W  = 6.2
 
     def setup(self):
-        # --- Voice
         if USE_PIPER:
             base_dir  = os.path.dirname(__file__)
             rt        = os.path.join(base_dir, "piper_runtime")
@@ -230,217 +224,160 @@ class FinalAnimation(VoiceoverScene, Scene):
                 raise FileNotFoundError("Place a Piper voice model .onnx in piper_runtime")
             self.set_speech_service(PiperService(piper_exe, models[0], tempo=VOICE_TEMPO))
 
-        # --- Graph (left column)
+        # --- Graph (CHECKPOINT-E)
         self.axes = Axes(
-            x_range=[-4, 4, 1],  # CHECKPOINT-2: x-range fixed
-            y_range=[-4, 7, 1],
-            x_length=self.LEFT_W,
-            y_length=6.3,
+            x_range=[-4, 4, 1], y_range=[-4, 7, 1], x_length=self.LEFT_W, y_length=6.3,
             axis_config={"color": AXIS_COLOR, "stroke_width": 2}
         )
         self.grid = NumberPlane(
-            x_range=[-4, 4, 1], y_range=[-4, 7, 1],
-            x_length=self.LEFT_W, y_length=6.3,
-            background_line_style={
-                "stroke_color": GRID_COLOR,
-                "stroke_width": 1,
-                "stroke_opacity": 0.45,
-            }
+            x_range=[-4, 4, 1], y_range=[-4, 7, 1], x_length=self.LEFT_W, y_length=6.3,
+            background_line_style={"stroke_color": GRID_COLOR, "stroke_width": 1, "stroke_opacity": 0.45}
         )
         self.coords = self.axes.add_coordinates(font_size=24, num_decimal_places=0)
-        self.graph_group = VGroup(self.grid, self.axes, self.coords).to_edge(LEFT, buff=0.5)
-        self.graph_group.set_z_index(1)
+        self.graph_group = VGroup(self.grid, self.axes, self.coords).to_edge(LEFT, buff=0.5).set_z_index(1)
 
-    # ---------------- Whiteboard (its own clean segment) ----------------
-    def whiteboard_intro(self):
-        board, frame = whiteboard(rect_pad=0.55)
-        title  = Tex(r"\textbf{Transformation Map (Function $\to$ Points)}", font_size=56, color=BLACK).next_to(board.get_top(), DOWN, buff=0.6)
-        g_eq   = MathTex(r"g(x)=a\,f\!\big(k(x-d)\big)+c", color=BLACK).scale(1.2).next_to(title, DOWN, buff=0.65)
-        mapping= MathTex(r"x'=\frac{x}{k}+d,\quad y'=a\,y+c", color=BLACK).scale(1.1).next_to(g_eq, DOWN, buff=0.6)
+    def update_caption(self, text: str):
+        """Creates a new caption, scales it to fit, and transforms the old one into it."""
+        max_width = self.graph_group.width - 0.5
+        new_caption_mobj = Tex(text, color=TEXT_COLOR)
+        if new_caption_mobj.width > max_width:
+            new_caption_mobj.set_width(max_width)
         
-        # CHECKPOINT-13: Split long bullet point and scale to fit board
+        new_caption_mobj.move_to(self.caption)
+        self.play(Transform(self.caption, new_caption_mobj), run_time=0.3)
+
+    # --- Whiteboard Sequence (CHECKPOINT-D)
+    def whiteboard_intro(self):
+        title  = Tex(r"\textbf{Transformation Map (Function $\to$ Points)}", font_size=56, color=BLACK)
+        g_eq   = MathTex(r"g(x)=a\,f\!\big(k(x-d)\big)+c", color=BLACK).scale(1.2)
+        mapping= MathTex(r"x'=\frac{x}{k}+d,\quad y'=a\,y+c", color=BLACK).scale(1.1)
+        
         bullets= VGroup(
             Tex(r"Inside $\Rightarrow$ horizontal, acts on $x$", color=BLACK),
             Tex(r"Outside $\Rightarrow$ vertical, acts on $y$", color=BLACK),
             Tex(r"$a<0 \Rightarrow$ reflect across $x$-axis", color=BLACK),
             Tex(r"$k<0 \Rightarrow$ reflect across $y$-axis", color=BLACK),
-        ).scale(0.9).arrange(DOWN, aligned_edge=LEFT, buff=0.35).next_to(mapping, DOWN, buff=0.6).align_to(g_eq, LEFT)
+        ).scale(0.9).arrange(DOWN, aligned_edge=LEFT, buff=0.35)
+        
+        theory_content = VGroup(title, g_eq, mapping, bullets).arrange(DOWN, buff=0.5)
 
-        board_grp = VGroup(board, frame, title, g_eq, mapping, bullets).set_z_index(5)
+        board_width = config.frame_width - 2 * 0.55
+        board_height = theory_content.height + 1.2
+        board, frame = whiteboard(width=board_width, height=board_height)
 
-        # Enter board
+        whiteboard_group = VGroup(board, frame, theory_content).to_edge(UP, buff=0.35).set_z_index(5)
+
         with self.voiceover(text=VO["theory"]) if USE_PIPER else nullcontext() as tr:
             self.play(FadeIn(board, shift=UP*0.1), Create(frame), run_time=0.6)
             self.play(Write(title), run_time=0.5)
             self.play(LaggedStart(Write(g_eq), Write(mapping), lag_ratio=0.25), run_time=1.0)
-            if USE_PIPER:
-                self.play(LaggedStart(*[Write(b) for b in bullets], lag_ratio=0.2), run_time=narr_time(tr, min_rt=1.2, cap=3.2))
-            else:
-                self.play(LaggedStart(*[Write(b) for b in bullets], lag_ratio=0.2), run_time=1.2)
+            rt = narr_time(tr, min_rt=1.2, cap=3.2) if USE_PIPER else 1.2
+            self.play(LaggedStart(*[Write(b) for b in bullets], lag_ratio=0.2), run_time=rt)
             self.wait(0.3)
 
-        # CHECKPOINT-13: Adjust eraser and path for new bullet layout
-        eraser_width = bullets.width + 0.5
-        eraser = RoundedRectangle(width=eraser_width, height=1.5, corner_radius=0.2,
-                                  fill_color=WHITE, fill_opacity=1.0, stroke_width=0).set_z_index(6)
-
-        path = VMobject()
-        p_right = bullets.get_right() + RIGHT*0.2
-        p_left  = bullets.get_left()  + LEFT*0.2
-        path.set_points_as_corners([
-            p_right,
-            p_left,
-            p_right + UP*0.8,
-            p_left + UP*0.8,
-            p_right + UP*1.6,
-            p_left + UP*1.6
-        ])
-        
-        def fade_bullets(mob, alpha):
-            for b in bullets:
-                b.set_opacity(max(0.0, 1.0 - 1.6*alpha))
-
-        self.add(eraser)
+        # New "dissolve" animation replacing the eraser.
         self.play(
-            MoveAlongPath(eraser, path),
-            UpdateFromAlphaFunc(bullets, fade_bullets),
-            run_time=1.3
+            FadeOut(bullets, scale=0.8, target_position=mapping),
+            run_time=1.0
         )
-        self.remove(eraser)
-        self.play(FadeOut(bullets), run_time=0.3)
-
-        # State the concrete problem after erase (still on whiteboard)
+        
         problem = VGroup(
-            Tex(r"\textbf{Problem:}", color=BLACK),
-            MathTex(r"g(x)=-\,f(-x-1)+3", color=BLACK),
+            Tex(r"\textbf{Problem:}", color=BLACK), MathTex(r"g(x)=-\,f(-x-1)+3", color=BLACK),
             Tex(r"Given point on $f$: $(1,-2)$", color=BLACK),
-        ).arrange(DOWN, aligned_edge=LEFT, buff=0.28).next_to(mapping, DOWN, buff=0.55).align_to(g_eq, LEFT)
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0.28).next_to(mapping, DOWN, buff=0.55).align_to(g_eq, LEFT).set_z_index(6)
 
         with self.voiceover(text=VO["announce_problem"]) if USE_PIPER else nullcontext() as tr:
-            if USE_PIPER:
-                self.play(Write(problem), run_time=narr_time(tr, min_rt=1.0, cap=2.6))
-            else:
-                self.play(Write(problem), run_time=1.0)
+            rt = narr_time(tr, min_rt=1.0, cap=2.6) if USE_PIPER else 1.0
+            self.play(Write(problem), run_time=rt)
 
-        # Clean exit of board
         self.play(FadeOut(VGroup(problem, title, g_eq, mapping, frame, board)), run_time=0.6)
 
-    # ---------------- Main construct ----------------
+    # --- Main Animation Sequence
     def construct(self):
-        # 1) Whiteboard segment
         self.whiteboard_intro()
 
-        # 2) Stage: graph on left, notes on right
         with self.voiceover(text=VO["plane"]) if USE_PIPER else nullcontext() as tr:
-            if USE_PIPER:
-                self.play(FadeIn(self.graph_group, shift=UP*0.1), run_time=narr_time(tr, min_rt=0.8, cap=1.2))
-            else:
-                self.play(FadeIn(self.graph_group, shift=UP*0.1), run_time=0.8)
+            rt = narr_time(tr, min_rt=0.8, cap=1.2) if USE_PIPER else 0.8
+            self.play(FadeIn(self.graph_group, shift=UP*0.1), run_time=rt)
 
-        # Right notes (no background panel; clean callouts) (CHECKPOINT-2)
-        gx      = MathTex(r"g(x)=-\,f(-x-1)+3", color=TEXT_COLOR).scale(0.95)
-        mapping = MathTex(r"x'=\frac{x}{k}+d,\;\;y'=a\,y+c", color=TEXT_COLOR).scale(0.9)
-        given   = MathTex(r"(1,-2)\ \text{ on }f", color=TEXT_COLOR).scale(0.9)
-        right_column = note_stack(2.7, 2.8, gx, mapping, given)
+        gx      = MathTex(r"g(x)=-\,f(-x-1)+3", color=TEXT_COLOR)
+        mapping = MathTex(r"x'=\frac{x}{k}+d,\;\;y'=a\,y+c", color=TEXT_COLOR)
+        given   = MathTex(r"(1,-2)\ \text{ on }f", color=TEXT_COLOR)
+        
+        right_column = note_stack(gx, mapping, given)
+        right_edge_x, left_edge_x = config.frame_width / 2, self.graph_group.get_right()[0]
+        center_x = left_edge_x + (right_edge_x - left_edge_x) / 2
+        right_column.move_to([center_x, 0, 0]).align_to(self.axes, UP)
         self.play(FadeIn(right_column, shift=UP*0.1), run_time=0.6)
 
-        # Top caption for steps
-        caption = Tex("", color=TEXT_COLOR).to_edge(UP, buff=0.35).set_z_index(4)
-        self.add(caption)
+        self.caption = Tex("", color=TEXT_COLOR).set_z_index(4)
+        self.caption.next_to(self.graph_group, DOWN, buff=0.25)
+        self.add(self.caption)
 
-        # Start point
         with self.voiceover(text=VO["start"]) if USE_PIPER else nullcontext() as tr:
             point = Dot(self.axes.c2p(1, -2), color=START_COLOR, radius=0.09)
             label = MathTex(r"(1,-2)", color=TEXT_COLOR).scale(0.9).next_to(point, DR, buff=0.18)
-            if USE_PIPER:
-                self.play(FadeIn(point, scale=0.5), Write(label), run_time=narr_time(tr))
-            else:
-                self.play(FadeIn(point, scale=0.5), Write(label), run_time=0.9)
+            rt = narr_time(tr) if USE_PIPER else 0.9
+            self.play(FadeIn(point, scale=0.5), Write(label), run_time=rt)
         self.wait(HOLD_PAD)
 
-        # Helpers to recolor tokens safely (CHECKPOINT-7)
-        def recolor_gx(tokens: list[str], color: ManimColor):
-            temp = gx.copy()
-            safe_color_by_tex(temp, tokens, color)
-            self.play(Transform(gx, temp), run_time=0.35)
+        def recolor(mobj_list, target_mobj_name, tokens, color):
+            target = next((m for m in mobj_list if m.tex_string == target_mobj_name), None)
+            if target:
+                target_copy = target.copy()
+                safe_color_by_tex(target_copy, tokens, color)
+                self.play(Transform(target, target_copy), run_time=0.35)
 
-        def recolor_map(tokens: list[str], color: ManimColor):
-            temp = mapping.copy()
-            safe_color_by_tex(temp, tokens, color)
-            self.play(Transform(mapping, temp), run_time=0.35)
-
-        # 3) Reflect across y-axis
         with self.voiceover(text=VO["y_reflect"]) if USE_PIPER else nullcontext() as tr:
-            self.play(Transform(caption, Tex("Reflect across the $y$-axis", color=TEXT_COLOR).move_to(caption)), run_time=0.3)
-            recolor_gx(["-x-1", "-x", "(-x-1)"], Y_AXIS_GLOW)
-            self.grid.save_state()
-            y_reflect = np.array([[-1, 0], [0, 1]])
+            self.update_caption("Reflect across the $y$-axis")
+            recolor(right_column, r"g(x)=-\,f(-x-1)+3", ["-x-1", "-x", "(-x-1)"], Y_AXIS_GLOW)
             target = self.axes.c2p(-1, -2)
             new_lab = MathTex(r"(-1,-2)", color=TEXT_COLOR).scale(0.9).next_to(target, DL, buff=0.18)
             rt = narr_time(tr, cap=1.8) if USE_PIPER else 1.8
-            self.play(
-                ApplyMatrix(y_reflect, self.grid),
-                point.animate.move_to(target),
-                Transform(label, new_lab),
-                run_time=rt
-            )
-            recolor_gx(["-x-1", "-x", "(-x-1)"], TEXT_COLOR)
-        self.grid.restore()
+            self.play(point.animate.move_to(target), Transform(label, new_lab), run_time=rt)
+            recolor(right_column, r"g(x)=-\,f(-x-1)+3", ["-x-1", "-x", "(-x-1)"], TEXT_COLOR)
         self.wait(HOLD_PAD*0.8)
 
-        # 4) Shift left by 1
         with self.voiceover(text=VO["left_shift"]) if USE_PIPER else nullcontext() as tr:
-            self.play(Transform(caption, Tex("Translate left by $1$", color=TEXT_COLOR).move_to(caption)), run_time=0.3)
-            recolor_map(["+d", "d"], Y_AXIS_GLOW)
+            self.update_caption("Translate left by $1$")
+            recolor(right_column, r"x'=\frac{x}{k}+d,\;\;y'=a\,y+c", ["+d", "d"], Y_AXIS_GLOW)
             shift_vec = self.axes.c2p(-1,0) - self.axes.c2p(0,0)
             target = self.axes.c2p(-2, -2)
             new_lab = MathTex(r"(-2,-2)", color=TEXT_COLOR).scale(0.9).next_to(target, DL, buff=0.18)
             rt = narr_time(tr, cap=1.6) if USE_PIPER else 1.6
             self.play(point.animate.shift(shift_vec), Transform(label, new_lab), run_time=rt)
-            recolor_map(["+d", "d"], TEXT_COLOR)
+            recolor(right_column, r"x'=\frac{x}{k}+d,\;\;y'=a\,y+c", ["+d", "d"], TEXT_COLOR)
         self.wait(HOLD_PAD*0.8)
 
-        # 5) Reflect across x-axis
         with self.voiceover(text=VO["x_reflect"]) if USE_PIPER else nullcontext() as tr:
-            self.play(Transform(caption, Tex("Reflect across the $x$-axis", color=TEXT_COLOR).move_to(caption)), run_time=0.3)
-            recolor_map(["a"], X_AXIS_GLOW)
-            self.grid.save_state()
-            x_reflect = np.array([[1, 0], [0, -1]])
+            self.update_caption("Reflect across the $x$-axis")
+            recolor(right_column, r"x'=\frac{x}{k}+d,\;\;y'=a\,y+c", ["a"], X_AXIS_GLOW)
             target = self.axes.c2p(-2, 2)
             new_lab = MathTex(r"(-2,2)", color=TEXT_COLOR).scale(0.9).next_to(target, UL, buff=0.18)
             rt = narr_time(tr, cap=1.8) if USE_PIPER else 1.8
-            self.play(
-                ApplyMatrix(x_reflect, self.grid),
-                point.animate.move_to(target),
-                Transform(label, new_lab),
-                run_time=rt
-            )
-            recolor_map(["a"], TEXT_COLOR)
-        self.grid.restore()
+            self.play(point.animate.move_to(target), Transform(label, new_lab), run_time=rt)
+            recolor(right_column, r"x'=\frac{x}{k}+d,\;\;y'=a\,y+c", ["a"], TEXT_COLOR)
         self.wait(HOLD_PAD*0.8)
 
-        # 6) Shift up by 3
         with self.voiceover(text=VO["up_shift"]) if USE_PIPER else nullcontext() as tr:
-            self.play(Transform(caption, Tex("Translate up by $3$", color=TEXT_COLOR).move_to(caption)), run_time=0.3)
-            recolor_map(["+c", "c"], FINAL_COLOR)
+            self.update_caption("Translate up by $3$")
+            recolor(right_column, r"x'=\frac{x}{k}+d,\;\;y'=a\,y+c", ["+c", "c"], FINAL_COLOR)
             shift_vec = self.axes.c2p(0,3) - self.axes.c2p(0,0)
             target = self.axes.c2p(-2, 5)
             new_lab = MathTex(r"(-2,5)", color=FINAL_COLOR).scale(1.0).next_to(target, UL, buff=0.2)
             rt = narr_time(tr, cap=1.8) if USE_PIPER else 1.8
             self.play(point.animate.shift(shift_vec), Transform(label, new_lab), run_time=rt)
             self.play(point.animate.set_color(FINAL_COLOR), run_time=0.25)
-            recolor_map(["+c", "c"], TEXT_COLOR)
+            recolor(right_column, r"x'=\frac{x}{k}+d,\;\;y'=a\,y+c", ["+c", "c"], TEXT_COLOR)
         self.wait(HOLD_PAD)
 
-        # 7) Wrap-up
         with self.voiceover(text=VO["wrap"]) if USE_PIPER else nullcontext() as tr:
-            self.play(Transform(caption, Tex(r"Result: $(-2,\,5)$", color=FINAL_COLOR).move_to(caption)), run_time=0.4)
+            self.update_caption(r"Result: $(-2,\,5)$")
             pts = [self.axes.c2p(1,-2), self.axes.c2p(-1,-2), self.axes.c2p(-2,-2), self.axes.c2p(-2,2), self.axes.c2p(-2,5)]
-            path = VMobject(color=PATH_COLOR, stroke_width=3).set_points_as_corners(pts)
+            path = VMobject(color=PATH_COLOR, stroke_width=3.5).set_points_smoothly(pts)
             dots = VGroup(*[Dot(p, radius=0.06, color=PATH_COLOR) for p in pts]).set_z_index(3)
             dots[0].set_color(START_COLOR)
             dots[-1].set_color(FINAL_COLOR).scale(1.3)
             rt = narr_time(tr, min_rt=1.2, cap=2.4, extra=0.5) if USE_PIPER else 1.2
-            self.play(Create(path), LaggedStart(*[FadeIn(d, scale=0.5) for d in dots], lag_ratio=0.15),
-                      run_time=rt)
+            self.play(Create(path), LaggedStart(*[FadeOut(d) for d in dots], lag_ratio=0.15), run_time=rt)
         self.wait(0.7)
