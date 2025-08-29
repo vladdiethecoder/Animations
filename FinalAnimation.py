@@ -11,6 +11,7 @@
 # [CHECKPOINT-10 | STATUS: Active | Title: Global Determinism | Must-Preserve: random.seed(7), config.frame_rate=30 | Notes: Ensures that repeated renders produce identical output.]
 # [CHECKPOINT-11 | STATUS: Active | Title: Debug Harness | Must-Preserve: DEBUG flag, _guard_* functions, _set_determinism() | Notes: Provides infrastructure for regression testing and validation.]
 # [CHECKPOINT-12 | STATUS: Active | Title: Hotfix for NameError | Must-Preserve: USE_PIPER flag, nullcontext import | Notes: Fixes a NameError by importing nullcontext and defining the USE_PIPER toggle.]
+# [CHECKPOINT-13 | STATUS: Active | Title: Whiteboard Text Layout | Must-Preserve: Split reflection rules, adjusted eraser path | Notes: Fixes text overflow on the whiteboard by reformatting bullets for better readability.]
 
 from __future__ import annotations
 from manim import *
@@ -133,7 +134,7 @@ class PiperService(SpeechService):
         # 2) WAV -> MP3 for accurate duration
         if os.path.exists(mp3_path):
             os.remove(mp3_path)
-        ff = [self.ffmpeg_path, "-y", "-v", "error", "-i", wav_path] + self._ffmpeg_atempo_args() + \
+        ff = [self.ffmpeg_path, "-y", "-v", "error", "i", wav_path] + self._ffmpeg_atempo_args() + \
              ["-acodec", "libmp3lame", "-b:a", "192k", mp3_path]
         proc2 = subprocess.run(ff, capture_output=True)
         if proc2.returncode != 0 or not os.path.exists(mp3_path):
@@ -256,11 +257,14 @@ class FinalAnimation(VoiceoverScene, Scene):
         title  = Tex(r"\textbf{Transformation Map (Function $\to$ Points)}", font_size=56, color=BLACK).next_to(board.get_top(), DOWN, buff=0.6)
         g_eq   = MathTex(r"g(x)=a\,f\!\big(k(x-d)\big)+c", color=BLACK).scale(1.2).next_to(title, DOWN, buff=0.65)
         mapping= MathTex(r"x'=\frac{x}{k}+d,\quad y'=a\,y+c", color=BLACK).scale(1.1).next_to(g_eq, DOWN, buff=0.6)
+        
+        # CHECKPOINT-13: Split long bullet point and scale to fit board
         bullets= VGroup(
             Tex(r"Inside $\Rightarrow$ horizontal, acts on $x$", color=BLACK),
             Tex(r"Outside $\Rightarrow$ vertical, acts on $y$", color=BLACK),
-            Tex(r"$a<0$: reflect across $x$-axis,\;\; $k<0$: reflect across $y$-axis", color=BLACK),
-        ).arrange(DOWN, aligned_edge=LEFT, buff=0.28).next_to(mapping, DOWN, buff=0.55).align_to(g_eq, LEFT)
+            Tex(r"$a<0 \Rightarrow$ reflect across $x$-axis", color=BLACK),
+            Tex(r"$k<0 \Rightarrow$ reflect across $y$-axis", color=BLACK),
+        ).scale(0.9).arrange(DOWN, aligned_edge=LEFT, buff=0.35).next_to(mapping, DOWN, buff=0.6).align_to(g_eq, LEFT)
 
         board_grp = VGroup(board, frame, title, g_eq, mapping, bullets).set_z_index(5)
 
@@ -275,17 +279,23 @@ class FinalAnimation(VoiceoverScene, Scene):
                 self.play(LaggedStart(*[Write(b) for b in bullets], lag_ratio=0.2), run_time=1.2)
             self.wait(0.3)
 
-        # Erase ONLY the theory bullets with a natural hand-wave; keep title + equations
-        eraser = RoundedRectangle(width=2.6, height=1.0, corner_radius=0.2,
+        # CHECKPOINT-13: Adjust eraser and path for new bullet layout
+        eraser_width = bullets.width + 0.5
+        eraser = RoundedRectangle(width=eraser_width, height=1.5, corner_radius=0.2,
                                   fill_color=WHITE, fill_opacity=1.0, stroke_width=0).set_z_index(6)
 
-        # Path across the bullet area (serpentine)
         path = VMobject()
         p_right = bullets.get_right() + RIGHT*0.2
         p_left  = bullets.get_left()  + LEFT*0.2
-        path.set_points_as_corners([p_right, p_left, p_right + UP*0.6, p_left + UP*0.6, p_right + UP*1.2])
-
-        # Fade bullets by alpha while moving eraser along path (FIX: remove alpha-parameter updater)
+        path.set_points_as_corners([
+            p_right,
+            p_left,
+            p_right + UP*0.8,
+            p_left + UP*0.8,
+            p_right + UP*1.6,
+            p_left + UP*1.6
+        ])
+        
         def fade_bullets(mob, alpha):
             for b in bullets:
                 b.set_opacity(max(0.0, 1.0 - 1.6*alpha))
