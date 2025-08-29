@@ -1,0 +1,12 @@
+{
+  "manim-sideview.defaultManimPath": "E:\\Python\\Scripts\\manim.exe",
+  "manim-sideview.commandLineArgs": [],
+  "manim-sideview.runOnSave": true,
+  "python-envs.pythonProjects": [
+    {
+      "path": "FinalAnimation.py",
+      "envManager": "ms-python.python:venv",
+      "packageManager": "ms-python.python:pip"
+    }
+  ]
+}
