@@ -3,27 +3,31 @@
 # --- ACTIVE ---
 # [CHECKPOINT-A | STATUS: Active | Title: Determinism & Consistency | Must-Preserve: random.seed(7), config settings | Notes: Ensures reproducible output.]
 # [CHECKPOINT-B | STATUS: Active | Title: Regression Guard & Debugging | Must-Preserve: DEBUG flag, _guard_* functions | Notes: Core infrastructure for testing and validation.]
-# [CHECKPOINT-C | STATUS: Active | Title: Readability & Accessibility | Must-Preserve: safe_color_by_tex(), note_stack(), clear layouts, constrained captions | Notes: Umbrella for visual clarity and professional presentation.]
-# [CHECKPOINT-D | STATUS: Active | Title: Whiteboard Component | Must-Preserve: Dynamic sizing, z-index layering, elegant text dissolve | Notes: Governs the entire whiteboard intro sequence, including the new aesthetic transition.]
-# [CHECKPOINT-E | STATUS: Active | Title: Main Scene Layout | Must-Preserve: Static grid, responsive right column, graph parameters, caption below graph | Notes: Defines the primary two-column layout of the main animation.]
+# [CHECKPOINT-D | STATUS: Active | Title: Whiteboard Component | Must-Preserve: Dynamic sizing, z-index layering, elegant text dissolve | Notes: Governs the entire whiteboard intro sequence.]
+# [CHECKPOINT-E | STATUS: Active | Title: Layout & Readability | Must-Preserve: Static grid, responsive right column, caption below graph, robust text updates | Notes: Umbrella for all visual layout, now using robust text updates.]
 # [CHECKPOINT-F | STATUS: Active | Title: Piper Voiceover Service | Must-Preserve: PiperService class, ffmpeg command, USE_PIPER flag | Notes: Manages all text-to-speech functionality.]
 # [CHECKPOINT-G | STATUS: Active | Title: Animation Pacing & Aesthetics | Must-Preserve: narr_time(), smoothed final path | Notes: Governs the timing and visual flow of the animation.]
 # ==============================================================================
 # --- ARCHIVE ---
+# [CHECKPOINT-C | STATUS: Superseded (2025-08-29) | Notes: Merged into C-E.]
 # [CHECKPOINT-1 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-D.]
 # [CHECKPOINT-9 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-D.]
 # [CHECKPOINT-13 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-D.]
 # [CHECKPOINT-15 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-D.]
-# [CHECKPOINT-16 | STATUS: Archived Hotfix (2025-08-29) | Notes: Z-Index bug fixed, now part of C-D.]
+# [CHECKPOINT-16 | STATUS: Archived Hotfix (2025-08-29) | Notes: Merged into C-D.]
 # [CHECKPOINT-2 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-E.]
-# [CHECKPOINT-4 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-C.]
+# [CHECKPOINT-4 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-E.]
+# [CHECKPOINT-17 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-E.]
+# [CHECKPOINT-18 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-E.]
+# [CHECKPOINT-19 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-E.]
+# [CHECKPOINT-21 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-E.]
 # [CHECKPOINT-22 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-E.]
 # [CHECKPOINT-23 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-E.]
 # [CHECKPOINT-24 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-E.]
 # [CHECKPOINT-5 | STATUS: Deprecated (2025-08-29)]
 # [CHECKPOINT-8 | STATUS: Deprecated (2025-08-29)]
-# [CHECKPOINT-12 | STATUS: Archived Hotfix (2025-08-29) | Notes: NameError fixed, now part of C-F.]
-# [CHECKPOINT-14 | STATUS: Archived Hotfix (2025-08-29) | Notes: FFmpeg RuntimeError fixed, now part of C-F.]
+# [CHECKPOINT-12 | STATUS: Archived Hotfix (2025-08-29) | Notes: Merged into C-F.]
+# [CHECKPOINT-14 | STATUS: Archived Hotfix (2025-08-29) | Notes: Merged into C-F.]
 # ==============================================================================
 
 from __future__ import annotations
@@ -178,7 +182,7 @@ VO = {
 }
 
 # =============================
-# Utilities (CHECKPOINT-C)
+# Utilities (CHECKPOINT-E)
 # =============================
 def whiteboard(
     width: float, height: float, rect_pad: float = 0.55
@@ -193,7 +197,7 @@ def whiteboard(
     return board, frame
 
 def safe_color_by_tex(m: Mobject, tokens: list[str], color: ManimColor) -> Mobject:
-    """Highlight using Manim (not LaTeX \color)."""
+    r"""Highlight using Manim (not LaTeX \color)."""
     for t in tokens:
         try:
             m.set_color_by_tex(t, color)
@@ -236,16 +240,6 @@ class FinalAnimation(VoiceoverScene, Scene):
         self.coords = self.axes.add_coordinates(font_size=24, num_decimal_places=0)
         self.graph_group = VGroup(self.grid, self.axes, self.coords).to_edge(LEFT, buff=0.5).set_z_index(1)
 
-    def update_caption(self, text: str):
-        """Creates a new caption, scales it to fit, and transforms the old one into it."""
-        max_width = self.graph_group.width - 0.5
-        new_caption_mobj = Tex(text, color=TEXT_COLOR)
-        if new_caption_mobj.width > max_width:
-            new_caption_mobj.set_width(max_width)
-        
-        new_caption_mobj.move_to(self.caption)
-        self.play(Transform(self.caption, new_caption_mobj), run_time=0.3)
-
     # --- Whiteboard Sequence (CHECKPOINT-D)
     def whiteboard_intro(self):
         title  = Tex(r"\textbf{Transformation Map (Function $\to$ Points)}", font_size=56, color=BLACK)
@@ -275,7 +269,6 @@ class FinalAnimation(VoiceoverScene, Scene):
             self.play(LaggedStart(*[Write(b) for b in bullets], lag_ratio=0.2), run_time=rt)
             self.wait(0.3)
 
-        # New "dissolve" animation replacing the eraser.
         self.play(
             FadeOut(bullets, scale=0.8, target_position=mapping),
             run_time=1.0
@@ -310,9 +303,9 @@ class FinalAnimation(VoiceoverScene, Scene):
         right_column.move_to([center_x, 0, 0]).align_to(self.axes, UP)
         self.play(FadeIn(right_column, shift=UP*0.1), run_time=0.6)
 
-        self.caption = Tex("", color=TEXT_COLOR).set_z_index(4)
-        self.caption.next_to(self.graph_group, DOWN, buff=0.25)
-        self.add(self.caption)
+        caption = Tex("").set_z_index(4)
+        caption.next_to(self.graph_group, DOWN, buff=0.25)
+        self.add(caption)
 
         with self.voiceover(text=VO["start"]) if USE_PIPER else nullcontext() as tr:
             point = Dot(self.axes.c2p(1, -2), color=START_COLOR, radius=0.09)
@@ -321,63 +314,62 @@ class FinalAnimation(VoiceoverScene, Scene):
             self.play(FadeIn(point, scale=0.5), Write(label), run_time=rt)
         self.wait(HOLD_PAD)
 
-        def recolor(mobj_list, target_mobj_name, tokens, color):
-            target = next((m for m in mobj_list if m.tex_string == target_mobj_name), None)
-            if target:
-                target_copy = target.copy()
-                safe_color_by_tex(target_copy, tokens, color)
-                self.play(Transform(target, target_copy), run_time=0.35)
+        # Robust text update functions
+        def update_text(old_mobj, new_text_str, position_mobj, **kwargs):
+            new_mobj = MathTex(new_text_str, color=TEXT_COLOR, **kwargs).scale(0.9)
+            new_mobj.next_to(position_mobj, UL, buff=0.18)
+            self.play(FadeOut(old_mobj, scale=0.5), FadeIn(new_mobj, scale=1.5))
+            return new_mobj
 
+        def update_caption_text(new_text_str):
+            new_caption = Tex(new_text_str, color=TEXT_COLOR)
+            max_width = self.graph_group.width - 0.5
+            if new_caption.width > max_width:
+                new_caption.set_width(max_width)
+            new_caption.move_to(caption.get_center())
+            self.play(FadeOut(caption), FadeIn(new_caption))
+            return new_caption
+
+        # Animation sequence
         with self.voiceover(text=VO["y_reflect"]) if USE_PIPER else nullcontext() as tr:
-            self.update_caption("Reflect across the $y$-axis")
-            recolor(right_column, r"g(x)=-\,f(-x-1)+3", ["-x-1", "-x", "(-x-1)"], Y_AXIS_GLOW)
+            caption = update_caption_text("Reflect across the $y$-axis")
             target = self.axes.c2p(-1, -2)
-            new_lab = MathTex(r"(-1,-2)", color=TEXT_COLOR).scale(0.9).next_to(target, DL, buff=0.18)
-            rt = narr_time(tr, cap=1.8) if USE_PIPER else 1.8
-            self.play(point.animate.move_to(target), Transform(label, new_lab), run_time=rt)
-            recolor(right_column, r"g(x)=-\,f(-x-1)+3", ["-x-1", "-x", "(-x-1)"], TEXT_COLOR)
+            label = update_text(label, r"(-1,-2)", Dot(target))
+            self.play(point.animate.move_to(target), run_time=narr_time(tr, cap=1.8))
         self.wait(HOLD_PAD*0.8)
 
         with self.voiceover(text=VO["left_shift"]) if USE_PIPER else nullcontext() as tr:
-            self.update_caption("Translate left by $1$")
-            recolor(right_column, r"x'=\frac{x}{k}+d,\;\;y'=a\,y+c", ["+d", "d"], Y_AXIS_GLOW)
-            shift_vec = self.axes.c2p(-1,0) - self.axes.c2p(0,0)
+            caption = update_caption_text("Translate left by $1$")
             target = self.axes.c2p(-2, -2)
-            new_lab = MathTex(r"(-2,-2)", color=TEXT_COLOR).scale(0.9).next_to(target, DL, buff=0.18)
-            rt = narr_time(tr, cap=1.6) if USE_PIPER else 1.6
-            self.play(point.animate.shift(shift_vec), Transform(label, new_lab), run_time=rt)
-            recolor(right_column, r"x'=\frac{x}{k}+d,\;\;y'=a\,y+c", ["+d", "d"], TEXT_COLOR)
+            shift_vec = self.axes.c2p(-1,0) - self.axes.c2p(0,0)
+            label = update_text(label, r"(-2,-2)", Dot(target))
+            self.play(point.animate.shift(shift_vec), run_time=narr_time(tr, cap=1.6))
         self.wait(HOLD_PAD*0.8)
 
         with self.voiceover(text=VO["x_reflect"]) if USE_PIPER else nullcontext() as tr:
-            self.update_caption("Reflect across the $x$-axis")
-            recolor(right_column, r"x'=\frac{x}{k}+d,\;\;y'=a\,y+c", ["a"], X_AXIS_GLOW)
+            caption = update_caption_text("Reflect across the $x$-axis")
             target = self.axes.c2p(-2, 2)
-            new_lab = MathTex(r"(-2,2)", color=TEXT_COLOR).scale(0.9).next_to(target, UL, buff=0.18)
-            rt = narr_time(tr, cap=1.8) if USE_PIPER else 1.8
-            self.play(point.animate.move_to(target), Transform(label, new_lab), run_time=rt)
-            recolor(right_column, r"x'=\frac{x}{k}+d,\;\;y'=a\,y+c", ["a"], TEXT_COLOR)
+            label = update_text(label, r"(-2,2)", Dot(target))
+            self.play(point.animate.move_to(target), run_time=narr_time(tr, cap=1.8))
         self.wait(HOLD_PAD*0.8)
 
         with self.voiceover(text=VO["up_shift"]) if USE_PIPER else nullcontext() as tr:
-            self.update_caption("Translate up by $3$")
-            recolor(right_column, r"x'=\frac{x}{k}+d,\;\;y'=a\,y+c", ["+c", "c"], FINAL_COLOR)
-            shift_vec = self.axes.c2p(0,3) - self.axes.c2p(0,0)
+            caption = update_caption_text("Translate up by $3$")
             target = self.axes.c2p(-2, 5)
-            new_lab = MathTex(r"(-2,5)", color=FINAL_COLOR).scale(1.0).next_to(target, UL, buff=0.2)
-            rt = narr_time(tr, cap=1.8) if USE_PIPER else 1.8
-            self.play(point.animate.shift(shift_vec), Transform(label, new_lab), run_time=rt)
+            shift_vec = self.axes.c2p(0,3) - self.axes.c2p(0,0)
+            label = update_text(label, r"(-2,5)", Dot(target), color=FINAL_COLOR)
+            label.scale(1.1)
+            self.play(point.animate.shift(shift_vec), run_time=narr_time(tr, cap=1.8))
             self.play(point.animate.set_color(FINAL_COLOR), run_time=0.25)
-            recolor(right_column, r"x'=\frac{x}{k}+d,\;\;y'=a\,y+c", ["+c", "c"], TEXT_COLOR)
         self.wait(HOLD_PAD)
 
         with self.voiceover(text=VO["wrap"]) if USE_PIPER else nullcontext() as tr:
-            self.update_caption(r"Result: $(-2,\,5)$")
+            caption = update_caption_text(r"Result: $(-2,\,5)$")
             pts = [self.axes.c2p(1,-2), self.axes.c2p(-1,-2), self.axes.c2p(-2,-2), self.axes.c2p(-2,2), self.axes.c2p(-2,5)]
             path = VMobject(color=PATH_COLOR, stroke_width=3.5).set_points_smoothly(pts)
             dots = VGroup(*[Dot(p, radius=0.06, color=PATH_COLOR) for p in pts]).set_z_index(3)
             dots[0].set_color(START_COLOR)
             dots[-1].set_color(FINAL_COLOR).scale(1.3)
             rt = narr_time(tr, min_rt=1.2, cap=2.4, extra=0.5) if USE_PIPER else 1.2
-            self.play(Create(path), LaggedStart(*[FadeOut(d) for d in dots], lag_ratio=0.15), run_time=rt)
+            self.play(Create(path), LaggedStart(*[FadeIn(d) for d in dots], lag_ratio=0.15), run_time=rt)
         self.wait(0.7)
