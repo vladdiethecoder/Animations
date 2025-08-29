@@ -7,6 +7,7 @@
 # [CHECKPOINT-E | STATUS: Active | Title: Layout & Readability | Must-Preserve: Static grid, responsive right column, caption below graph, robust text updates | Notes: Umbrella for all visual layout, now using robust text updates.]
 # [CHECKPOINT-F | STATUS: Active | Title: Piper Voiceover Service | Must-Preserve: PiperService class, ffmpeg command, USE_PIPER flag | Notes: Manages all text-to-speech functionality.]
 # [CHECKPOINT-G | STATUS: Active | Title: Animation Pacing & Aesthetics | Must-Preserve: narr_time(), smoothed final path | Notes: Governs the timing and visual flow of the animation.]
+# [CHECKPOINT-H | STATUS: Active | Title: Robust UI Positioning | Must-Preserve: caption_placeholder logic | Notes: Ensures UI elements like the caption have stable, predictable positions.]
 # ==============================================================================
 # --- ARCHIVE ---
 # [CHECKPOINT-C | STATUS: Superseded (2025-08-29) | Notes: Merged into C-E.]
@@ -303,8 +304,10 @@ class FinalAnimation(VoiceoverScene, Scene):
         right_column.move_to([center_x, 0, 0]).align_to(self.axes, UP)
         self.play(FadeIn(right_column, shift=UP*0.1), run_time=0.6)
 
-        caption = Tex("").set_z_index(4)
-        caption.next_to(self.graph_group, DOWN, buff=0.25)
+        # FIX: Create a stable placeholder for the caption's position. (CHECKPOINT-H)
+        caption_placeholder = Mobject()
+        caption_placeholder.next_to(self.graph_group, DOWN, buff=0.25)
+        caption = Tex("").move_to(caption_placeholder)
         self.add(caption)
 
         with self.voiceover(text=VO["start"]) if USE_PIPER else nullcontext() as tr:
@@ -316,7 +319,8 @@ class FinalAnimation(VoiceoverScene, Scene):
 
         # Robust text update functions
         def update_text(old_mobj, new_text_str, position_mobj, **kwargs):
-            new_mobj = MathTex(new_text_str, color=TEXT_COLOR, **kwargs).scale(0.9)
+            text_color = kwargs.pop('color', TEXT_COLOR)
+            new_mobj = MathTex(new_text_str, color=text_color, **kwargs).scale(0.9)
             new_mobj.next_to(position_mobj, UL, buff=0.18)
             self.play(FadeOut(old_mobj, scale=0.5), FadeIn(new_mobj, scale=1.5))
             return new_mobj
@@ -326,7 +330,8 @@ class FinalAnimation(VoiceoverScene, Scene):
             max_width = self.graph_group.width - 0.5
             if new_caption.width > max_width:
                 new_caption.set_width(max_width)
-            new_caption.move_to(caption.get_center())
+            # FIX: Move to the stable placeholder's position. (CHECKPOINT-H)
+            new_caption.move_to(caption_placeholder)
             self.play(FadeOut(caption), FadeIn(new_caption))
             return new_caption
 
