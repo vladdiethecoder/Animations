@@ -4,12 +4,12 @@
 # [CHECKPOINT-A | STATUS: Active | Title: Determinism & Consistency | Must-Preserve: random.seed(7), config settings | Notes: Ensures reproducible output.]
 # [CHECKPOINT-B | STATUS: Active | Title: Regression Guard & Debugging | Must-Preserve: DEBUG flag, _guard_* functions | Notes: Core infrastructure for testing and validation.]
 # [CHECKPOINT-D | STATUS: Active | Title: Whiteboard Component | Must-Preserve: Dynamic sizing, z-index layering, elegant text dissolve | Notes: Governs the entire whiteboard intro sequence.]
-# [CHECKPOINT-E | STATUS: Active | Title: Layout & Readability | Must-Preserve: Static grid, responsive right column, caption below graph, robust text updates | Notes: Umbrella for all visual layout, now using robust text updates.]
-# [CHECKPOINT-F | STATUS: Active | Title: Piper Voiceover Service | Must-Preserve: PiperService class, ffmpeg command, USE_PIPER flag | Notes: Manages all text-to-speech functionality.]
-# [CHECKPOINT-G | STATUS: Active | Title: Animation Pacing & Aesthetics | Must-Preserve: narr_time(), smoothed final path | Notes: Governs the timing and visual flow of the animation.]
-# [CHECKPOINT-H | STATUS: Active | Title: Robust UI Positioning | Must-Preserve: caption_placeholder logic | Notes: Ensures UI elements like the caption have stable, predictable positions.]
+# [CHECKPOINT-E | STATUS: Active | Title: Layout, Readability & UI | Must-Preserve: Static grid, responsive right column, corner-anchored caption | Notes: Umbrella for all visual layout and text updates.]
+# [CHECKPOINT-F | STATUS: Active | Title: Piper Voiceover Service | Must-Preserve: PiperService class, USE_PIPER flag | Notes: Manages all text-to-speech functionality.]
+# [CHECKPOINT-G | STATUS: Active | Title: Animation Pacing & Aesthetics | Must-Preserve: narr_time(), smoothed final path, grouped animations | Notes: Governs the timing and visual flow of the animation.]
 # ==============================================================================
 # --- ARCHIVE ---
+# [CHECKPOINT-H | STATUS: Superseded (2025-08-29) | Notes: Merged into C-E.]
 # [CHECKPOINT-C | STATUS: Superseded (2025-08-29) | Notes: Merged into C-E.]
 # [CHECKPOINT-1 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-D.]
 # [CHECKPOINT-9 | STATUS: Superseded (2025-08-29) | Notes: Merged into C-D.]
@@ -207,9 +207,7 @@ def safe_color_by_tex(m: Mobject, tokens: list[str], color: ManimColor) -> Mobje
 
 def note_stack(*items: Mobject) -> VGroup:
     """Stacks items vertically with left alignment and airy spacing."""
-    group = VGroup()
-    for item in items:
-        group.add(item.copy().scale(0.95))
+    group = VGroup(*items)
     group.arrange(DOWN, aligned_edge=LEFT, buff=0.7)
     return group
 
@@ -218,6 +216,15 @@ def note_stack(*items: Mobject) -> VGroup:
 # =============================
 class FinalAnimation(VoiceoverScene, Scene):
     LEFT_W  = 6.2
+
+    def _get_label_update(self, old_mobj, new_text_str, position_mobj, **kwargs):
+        """Returns an animation and the new mobject, instead of playing it."""
+        text_color = kwargs.pop('color', TEXT_COLOR)
+        new_mobj = MathTex(new_text_str, color=text_color, **kwargs).scale(0.9)
+        new_mobj.next_to(position_mobj, UL, buff=0.18)
+        
+        animation = AnimationGroup(FadeOut(old_mobj, scale=0.5), FadeIn(new_mobj, scale=1.5))
+        return animation, new_mobj
 
     def setup(self):
         if USE_PIPER:
@@ -291,90 +298,94 @@ class FinalAnimation(VoiceoverScene, Scene):
         self.whiteboard_intro()
 
         with self.voiceover(text=VO["plane"]) if USE_PIPER else nullcontext() as tr:
-            rt = narr_time(tr, min_rt=0.8, cap=1.2) if USE_PIPER else 0.8
-            self.play(FadeIn(self.graph_group, shift=UP*0.1), run_time=rt)
+            self.play(FadeIn(self.graph_group, shift=UP*0.1), run_time=narr_time(tr))
 
-        gx      = MathTex(r"g(x)=-\,f(-x-1)+3", color=TEXT_COLOR)
-        mapping = MathTex(r"x'=\frac{x}{k}+d,\;\;y'=a\,y+c", color=TEXT_COLOR)
-        given   = MathTex(r"(1,-2)\ \text{ on }f", color=TEXT_COLOR)
+        gx      = MathTex(r"g(x)=-\,f(-x-1)+3", color=TEXT_COLOR).scale(0.95)
+        mapping = MathTex(r"x'=\frac{x}{k}+d,\;\;y'=a\,y+c", color=TEXT_COLOR).scale(0.95)
+        given   = MathTex(r"(1,-2)\ \text{ on }f", color=TEXT_COLOR).scale(0.95)
         
         right_column = note_stack(gx, mapping, given)
-        right_edge_x, left_edge_x = config.frame_width / 2, self.graph_group.get_right()[0]
-        center_x = left_edge_x + (right_edge_x - left_edge_x) / 2
+        right_edge_of_screen = self.camera.frame_width / 2
+        right_edge_of_graph = self.graph_group.get_right()[0]
+        center_x = (right_edge_of_graph + right_edge_of_screen) / 2
         right_column.move_to([center_x, 0, 0]).align_to(self.axes, UP)
+        
         self.play(FadeIn(right_column, shift=UP*0.1), run_time=0.6)
 
-        # FIX: Create a stable placeholder for the caption's position. (CHECKPOINT-H)
-        caption_placeholder = Mobject()
-        caption_placeholder.next_to(self.graph_group, DOWN, buff=0.25)
-        caption = Tex("").move_to(caption_placeholder)
+        caption_anchor = Mobject().to_corner(DR, buff=0.5)
+        caption = Tex(".").set_opacity(0).move_to(caption_anchor)
         self.add(caption)
 
         with self.voiceover(text=VO["start"]) if USE_PIPER else nullcontext() as tr:
             point = Dot(self.axes.c2p(1, -2), color=START_COLOR, radius=0.09)
             label = MathTex(r"(1,-2)", color=TEXT_COLOR).scale(0.9).next_to(point, DR, buff=0.18)
-            rt = narr_time(tr) if USE_PIPER else 0.9
-            self.play(FadeIn(point, scale=0.5), Write(label), run_time=rt)
+            self.play(FadeIn(point, scale=0.5), Write(label), run_time=narr_time(tr))
         self.wait(HOLD_PAD)
 
-        # Robust text update functions
-        def update_text(old_mobj, new_text_str, position_mobj, **kwargs):
-            text_color = kwargs.pop('color', TEXT_COLOR)
-            new_mobj = MathTex(new_text_str, color=text_color, **kwargs).scale(0.9)
-            new_mobj.next_to(position_mobj, UL, buff=0.18)
-            self.play(FadeOut(old_mobj, scale=0.5), FadeIn(new_mobj, scale=1.5))
-            return new_mobj
-
-        def update_caption_text(new_text_str):
-            new_caption = Tex(new_text_str, color=TEXT_COLOR)
-            max_width = self.graph_group.width - 0.5
-            if new_caption.width > max_width:
-                new_caption.set_width(max_width)
-            # FIX: Move to the stable placeholder's position. (CHECKPOINT-H)
-            new_caption.move_to(caption_placeholder)
-            self.play(FadeOut(caption), FadeIn(new_caption))
-            return new_caption
-
-        # Animation sequence
+        # --- Step 1: Y-Reflection ---
+        new_caption_mobj = Tex("Reflect across the $y$-axis", color=TEXT_COLOR).move_to(caption_anchor, aligned_edge=DR)
+        self.play(Transform(caption, new_caption_mobj), run_time=0.25)
         with self.voiceover(text=VO["y_reflect"]) if USE_PIPER else nullcontext() as tr:
-            caption = update_caption_text("Reflect across the $y$-axis")
             target = self.axes.c2p(-1, -2)
-            label = update_text(label, r"(-1,-2)", Dot(target))
-            self.play(point.animate.move_to(target), run_time=narr_time(tr, cap=1.8))
+            label_anim, label = self._get_label_update(label, r"(-1,-2)", Dot(target))
+            self.play(
+                point.animate.move_to(target),
+                label_anim,
+                run_time=narr_time(tr, cap=1.8)
+            )
         self.wait(HOLD_PAD*0.8)
 
+        # --- Step 2: Left Shift ---
+        new_caption_mobj = Tex("Translate left by $1$", color=TEXT_COLOR).move_to(caption_anchor, aligned_edge=DR)
+        self.play(Transform(caption, new_caption_mobj), run_time=0.25)
         with self.voiceover(text=VO["left_shift"]) if USE_PIPER else nullcontext() as tr:
-            caption = update_caption_text("Translate left by $1$")
             target = self.axes.c2p(-2, -2)
             shift_vec = self.axes.c2p(-1,0) - self.axes.c2p(0,0)
-            label = update_text(label, r"(-2,-2)", Dot(target))
-            self.play(point.animate.shift(shift_vec), run_time=narr_time(tr, cap=1.6))
+            label_anim, label = self._get_label_update(label, r"(-2,-2)", Dot(target))
+            self.play(
+                point.animate.shift(shift_vec),
+                label_anim,
+                run_time=narr_time(tr, cap=1.6)
+            )
         self.wait(HOLD_PAD*0.8)
 
+        # --- Step 3: X-Reflection ---
+        new_caption_mobj = Tex("Reflect across the $x$-axis", color=TEXT_COLOR).move_to(caption_anchor, aligned_edge=DR)
+        self.play(Transform(caption, new_caption_mobj), run_time=0.25)
         with self.voiceover(text=VO["x_reflect"]) if USE_PIPER else nullcontext() as tr:
-            caption = update_caption_text("Reflect across the $x$-axis")
             target = self.axes.c2p(-2, 2)
-            label = update_text(label, r"(-2,2)", Dot(target))
-            self.play(point.animate.move_to(target), run_time=narr_time(tr, cap=1.8))
+            label_anim, label = self._get_label_update(label, r"(-2,2)", Dot(target))
+            self.play(
+                point.animate.move_to(target),
+                label_anim,
+                run_time=narr_time(tr, cap=1.8)
+            )
         self.wait(HOLD_PAD*0.8)
 
+        # --- Step 4: Up Shift ---
+        new_caption_mobj = Tex("Translate up by $3$", color=TEXT_COLOR).move_to(caption_anchor, aligned_edge=DR)
+        self.play(Transform(caption, new_caption_mobj), run_time=0.25)
         with self.voiceover(text=VO["up_shift"]) if USE_PIPER else nullcontext() as tr:
-            caption = update_caption_text("Translate up by $3$")
             target = self.axes.c2p(-2, 5)
             shift_vec = self.axes.c2p(0,3) - self.axes.c2p(0,0)
-            label = update_text(label, r"(-2,5)", Dot(target), color=FINAL_COLOR)
+            label_anim, label = self._get_label_update(label, r"(-2,5)", Dot(target), color=FINAL_COLOR)
             label.scale(1.1)
-            self.play(point.animate.shift(shift_vec), run_time=narr_time(tr, cap=1.8))
+            self.play(
+                point.animate.shift(shift_vec),
+                label_anim,
+                run_time=narr_time(tr, cap=1.8)
+            )
             self.play(point.animate.set_color(FINAL_COLOR), run_time=0.25)
         self.wait(HOLD_PAD)
-
+        
+        # --- Step 5: Wrap-up ---
+        new_caption_mobj = Tex(r"Result: $(-2,\,5)$", color=TEXT_COLOR).move_to(caption_anchor, aligned_edge=DR)
+        self.play(Transform(caption, new_caption_mobj), run_time=0.25)
         with self.voiceover(text=VO["wrap"]) if USE_PIPER else nullcontext() as tr:
-            caption = update_caption_text(r"Result: $(-2,\,5)$")
             pts = [self.axes.c2p(1,-2), self.axes.c2p(-1,-2), self.axes.c2p(-2,-2), self.axes.c2p(-2,2), self.axes.c2p(-2,5)]
             path = VMobject(color=PATH_COLOR, stroke_width=3.5).set_points_smoothly(pts)
             dots = VGroup(*[Dot(p, radius=0.06, color=PATH_COLOR) for p in pts]).set_z_index(3)
             dots[0].set_color(START_COLOR)
             dots[-1].set_color(FINAL_COLOR).scale(1.3)
-            rt = narr_time(tr, min_rt=1.2, cap=2.4, extra=0.5) if USE_PIPER else 1.2
-            self.play(Create(path), LaggedStart(*[FadeIn(d) for d in dots], lag_ratio=0.15), run_time=rt)
+            self.play(Create(path), LaggedStart(*[FadeIn(d) for d in dots], lag_ratio=0.15), run_time=narr_time(tr, min_rt=1.2, cap=2.4, extra=0.5))
         self.wait(0.7)
