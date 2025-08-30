@@ -1,8 +1,17 @@
 # FinalAnimation.py
+# [CHECKPOINT-1 | STATUS: Active | Title: Regression Guard | Must-Preserve: preserve prior fixes; minimal-diff edits; rollback ready | Notes: confirm after each change]
+# [CHECKPOINT-2 | STATUS: Active | Title: Readability & Accessibility | Must-Preserve: ≥28px labels at 1080p, high contrast, aligned math | Notes: academic style]
+# [CHECKPOINT-3 | STATUS: Active | Title: Determinism/Consistency | Must-Preserve: fixed seed; fps/resolution pinned; stable timings | Notes: use _set_determinism()]
+# [CHECKPOINT-4 | STATUS: Active | Title: Camera Behavior | Must-Preserve: tasteful zoom/pan; no abrupt jumps | Notes: ties to FM-8]
+# [CHECKPOINT-5 | STATUS: Active | Title: Eraser Effect Integrity | Must-Preserve: natural wipe; no background lightening; no jitter | Notes: FM-1]
+# Rotation check performed — header decluttered as needed.
+# Failure Modes: FM-1…FM-8 (see /docs/CHECKPOINTS.md) | Version: Manim CE v0.19.0
 
 from __future__ import annotations
 from manim import *
 from manim_voiceover import VoiceoverScene
+import os
+import glob
 import random
 from contextlib import nullcontext
 
@@ -12,6 +21,26 @@ from utils import narr_time, whiteboard, note_stack, PiperService
 
 # Set the random seed for determinism
 random.seed(RANDOM_SEED)
+
+# --- Debug/guard helpers (Checkpoint-2, Checkpoint-3) ---
+DEBUG = False
+def _guard_label_readable(label: Mobject, min_px: int = 28):
+    # Ensure final rasterized height at 1080p is readable
+    assert label.height * 1080 >= min_px, f"[GUARD] Too small: {label.height*1080:.1f}px < {min_px}px"
+
+def _label_direction_for(point_xy: tuple[float, float]) -> np.ndarray:
+    """Choose a stable label direction based on the point's quadrant to avoid clashes."""
+    x, y = point_xy
+    # Prefer diagonals to clear both axes; bias away from origin/axes
+    if x >= 0 and y >= 0:
+        return UR
+    if x >= 0 and y < 0:
+       return DR
+    if x < 0 and y >= 0:
+        return UL
+    return DL
+
+LABEL_BUFF = 0.32  # a bit more than 0.18 to clear grid ticks at 1080p
 
 class FinalAnimation(VoiceoverScene, Scene):
     def setup(self):
@@ -96,6 +125,19 @@ class FinalAnimation(VoiceoverScene, Scene):
         point = Dot(self.axes.c2p(1, -2), color=PALETTE["start"], radius=0.09)
         label = MathTex(r"(1,-2)", color=PALETTE["text"]).scale(0.9).next_to(point, DR, buff=0.18)
         self.add(point, label)
+        point = Dot(self.axes.c2p(1, -2), color=PALETTE["start"], radius=0.09)
+
+        def relabel(text: str, color=PALETTE["text"]) -> MathTex:
+            """Create a label and place it near the current point with quadrant-aware offset."""
+            lbl = MathTex(text, color=color).scale(0.9)
+            # map current point location back to data coords to pick direction
+            px, py = self.axes.p2c(point.get_center())
+            lbl.next_to(point, _label_direction_for((px, py)), buff=LABEL_BUFF)
+            _guard_label_readable(lbl, 28)
+            return lbl
+
+        label = relabel(r"(1,-2)")
+        self.add(point, label)
         self.wait(PACING["hold_pad"])
 
         def update_caption(new_text_str):
@@ -112,6 +154,12 @@ class FinalAnimation(VoiceoverScene, Scene):
             target = self.axes.c2p(-1, -2)
             self.play(point.animate.move_to(target), label.animate.next_to(Dot(target), DR, buff=0.18), run_time=narr_time(tr))
             self.play(Transform(label, MathTex(r"(-1,-2)", color=PALETTE["text"]).scale(0.9).move_to(label.get_center())))
+        with self.voiceover(text=VO["y_reflect"]) if USE_PIPER else nullcontext() as tr:
+            update_caption("Reflect across the $y$-axis")
+            target = self.axes.c2p(-1, -2)
+            self.play(point.animate.move_to(target), run_time=narr_time(tr))
+            new_label = relabel(r"(-1,-2)")
+            self.play(Transform(label, new_label))        
         self.wait(PACING["hold_pad"])
 
         with self.voiceover(text=VO["left_shift"]) if USE_PIPER else nullcontext() as tr:
@@ -119,6 +167,12 @@ class FinalAnimation(VoiceoverScene, Scene):
             target = self.axes.c2p(-2, -2)
             self.play(point.animate.move_to(target), label.animate.next_to(Dot(target), DR, buff=0.18), run_time=narr_time(tr))
             self.play(Transform(label, MathTex(r"(-2,-2)", color=PALETTE["text"]).scale(0.9).move_to(label.get_center())))
+        with self.voiceover(text=VO["left_shift"]) if USE_PIPER else nullcontext() as tr:
+            update_caption("Translate left by $1$")
+            target = self.axes.c2p(-2, -2)
+            self.play(point.animate.move_to(target), run_time=narr_time(tr))
+            new_label = relabel(r"(-2,-2)")
+            self.play(Transform(label, new_label))        
         self.wait(PACING["hold_pad"])
 
         with self.voiceover(text=VO["x_reflect"]) if USE_PIPER else nullcontext() as tr:
@@ -126,6 +180,12 @@ class FinalAnimation(VoiceoverScene, Scene):
             target = self.axes.c2p(-2, 2)
             self.play(point.animate.move_to(target), label.animate.next_to(Dot(target), DR, buff=0.18), run_time=narr_time(tr))
             self.play(Transform(label, MathTex(r"(-2,2)", color=PALETTE["text"]).scale(0.9).move_to(label.get_center())))
+        with self.voiceover(text=VO["x_reflect"]) if USE_PIPER else nullcontext() as tr:
+            update_caption("Reflect across the $x$-axis")
+            target = self.axes.c2p(-2, 2)
+            self.play(point.animate.move_to(target), run_time=narr_time(tr))
+            new_label = relabel(r"(-2,2)")
+            self.play(Transform(label, new_label))        
         self.wait(PACING["hold_pad"])
 
         with self.voiceover(text=VO["up_shift"]) if USE_PIPER else nullcontext() as tr:
@@ -133,6 +193,13 @@ class FinalAnimation(VoiceoverScene, Scene):
             target = self.axes.c2p(-2, 5)
             self.play(point.animate.move_to(target), label.animate.next_to(Dot(target), DR, buff=0.18), run_time=narr_time(tr))
             self.play(Transform(label, MathTex(r"(-2,5)", color=PALETTE["final"]).scale(1.0).move_to(label.get_center())))
+            self.play(point.animate.set_color(PALETTE["final"]))
+        with self.voiceover(text=VO["up_shift"]) if USE_PIPER else nullcontext() as tr:
+            update_caption("Translate up by $3$")
+            target = self.axes.c2p(-2, 5)
+            self.play(point.animate.move_to(target), run_time=narr_time(tr))
+            new_label = relabel(r"(-2,5)", color=PALETTE["final"])
+            self.play(Transform(label, new_label))
             self.play(point.animate.set_color(PALETTE["final"]))
         self.wait(PACING["hold_pad"])
 

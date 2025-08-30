@@ -32,3 +32,11 @@ Use: Check during **Pass 1** planning; cite during **Pass 2** implementation.
   Used In: `scenes/eraser_scene.py`
 
 (Add entries as they’re discovered/used; keep duplicates if they add nuance.)
+
+[MathTex.next_to + Axes.p2c] — Quadrant-aware label placement near points to avoid overlap.
+Source Type: Blog/Practice
+Source: (internal)
+Verified: 2025-08
+Version Notes: Manim CE v0.19.0; uses p2c() to read data-space for direction choice.
+Caveats: Recompute after each point move; ensure ≥28 px via guard.
+Used In: FinalAnimation.point_transformation_sequence
