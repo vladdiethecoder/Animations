@@ -15,7 +15,6 @@ from contextlib import nullcontext
 
 import numpy as np
 from manim import *
-from helpers.highlighting import Highlighter
 from manim_voiceover import VoiceoverScene
 
 from config import USE_PIPER, RANDOM_SEED, PALETTE, PACING, VO
@@ -51,13 +50,11 @@ def _label_direction_for(point_xy: tuple[float, float]):
         return UL
     return DL
 
-def pulse(scene: "FinalAnimation", mobj: Mobject, run_time: float = 0.6):
-    scene.play(
-        Indicate(
-            mobj,
-            scale_factor=1.05,
-            color=PALETTE.get("final", "#90BE6D"),
-        ),
+def pulse(mobj: Mobject, run_time: float = 0.6) -> Indicate:
+    return Indicate(
+        mobj,
+        scale_factor=1.05,
+        color=PALETTE.get("final", "#90BE6D"),
         run_time=run_time,
     )
 
@@ -108,12 +105,18 @@ class FinalAnimation(VoiceoverScene):
         self.graph_group.to_edge(LEFT, buff=0.5).set_z_index(1)
 
         self.caption = Mobject()
+        # For sharing state between scenes
+        self.right_column = VGroup()
+        self.steps_panel = VGroup()
+        self.point_label = Mobject()
+        self.point = Mobject()
+
 
     def construct(self):
         random.seed(RANDOM_SEED)
         self.whiteboard_intro()
         self.point_transformation_sequence()
-        self.wait(2)
+        self.outro_scene()
 
     def whiteboard_intro(self):
         title = Tex(
@@ -171,7 +174,7 @@ class FinalAnimation(VoiceoverScene):
             m_d.set_color(HIL_EXPR_X)
             g_k.set_color(HIL_FUNC)
             g_xd.set_color(HIL_FUNC)
-            pulse(self, VGroup(m_xp, m_x_over_k, m_d), run_time=0.45 if USE_PIPER else 0.5)
+            self.play(pulse(VGroup(m_xp, m_x_over_k, m_d)), run_time=0.45 if USE_PIPER else 0.5)
             self.wait(narr_time(tr_x) if USE_PIPER else 0.2)
 
         # y′ narration — highlight y′ + (a y, c), and provenance (a, c)
@@ -182,7 +185,7 @@ class FinalAnimation(VoiceoverScene):
             m_c.set_color(HIL_EXPR_Y)
             g_a.set_color(HIL_FUNC)
             g_c.set_color(HIL_FUNC)
-            pulse(self, VGroup(m_yp, m_ay, m_c), run_time=0.45 if USE_PIPER else 0.5)
+            self.play(pulse(VGroup(m_yp, m_ay, m_c)), run_time=0.45 if USE_PIPER else 0.5)
             self.wait(narr_time(tr_y) if USE_PIPER else 0.2)
 
         with self.voiceover(text=VO.get("theory_bullets", "")) if USE_PIPER else nullcontext() as tr_bul:
@@ -206,12 +209,12 @@ class FinalAnimation(VoiceoverScene):
                         r"y'", "=", r"a\,y", "+", "c",
                         color=PALETTE["text"])
         r_point = MathTex(r"(1,-2)\ \text{ on }f", color=PALETTE["text"])
-        right_column = VGroup(r_g, r_map, r_point).arrange(DOWN, aligned_edge=LEFT, buff=0.45)
+        self.right_column = VGroup(r_g, r_map, r_point).arrange(DOWN, aligned_edge=LEFT, buff=0.45)
 
         rc_x = self.graph_group.get_right()[0]
-        right_column.move_to([rc_x + (config.frame_width / 2 - rc_x) / 2, 0, 0])\
+        self.right_column.move_to([rc_x + (config.frame_width / 2 - rc_x) / 2, 0, 0])\
                     .align_to(self.axes, UP)
-        self.add(right_column)
+        self.add(self.right_column)
 
         g_minus, g_inside, g_plus3 = r_g[2], r_g[4], r_g[7]
         mxp, mx_over_k, md = r_map[0], r_map[2], r_map[4]
@@ -225,12 +228,15 @@ class FinalAnimation(VoiceoverScene):
 
         # ---------- "Show steps" panel (pinned bottom-right, math terms, mirrored order) ----------
         # Using absolute coordinates to bypass v0.19.0 positioning bugs.
-        steps_origin_coord = np.array([5.5, -2.0, 0])
+        # Align the steps panel with the text block above it for a cleaner layout.
+        align_x = self.right_column.get_left()[0]
+        align_y = self.right_column.get_bottom()[1] - 0.5
+        steps_origin_coord = np.array([align_x, align_y, 0])
         steps_anchor = Tex("Steps", font_size=30, color=PALETTE["text"]).set_opacity(0.75)
         steps_anchor.move_to(steps_origin_coord, aligned_edge=UP + LEFT)
         steps_items = VGroup()
-        steps_panel = VGroup(steps_anchor, steps_items).set_z_index(5)
-        self.add(steps_panel)
+        self.steps_panel = VGroup(steps_anchor, steps_items).set_z_index(5)
+        self.add(self.steps_panel)
 
         def add_step_math(latex: str):
             """Append a compact math justification item using absolute positioning."""
@@ -252,22 +258,22 @@ class FinalAnimation(VoiceoverScene):
         self.caption = Tex("").move_to(caption_position)
         self.add(self.caption)
 
-        point = Dot(self.axes.c2p(1, -2), color=PALETTE["start"], radius=0.09)
+        self.point = Dot(self.axes.c2p(1, -2), color=PALETTE["start"], radius=0.09)
 
         def _purge_stray_dots():
             for m in list(self.mobjects):
-                if isinstance(m, Dot) and m is not point:
+                if isinstance(m, Dot) and m is not self.point:
                     self.remove(m)
 
         def relabel(text: str, color=PALETTE["text"]) -> MathTex:
             lbl = MathTex(text, color=color).scale(0.9)
-            px, py = self.axes.p2c(point.get_center())
-            lbl.next_to(point, _label_direction_for((px, py)), buff=LABEL_BUFF)
+            px, py = self.axes.p2c(self.point.get_center())
+            lbl.next_to(self.point, _label_direction_for((px, py)), buff=LABEL_BUFF)
             _guard_label_readable(lbl, 28)
             return lbl
 
-        label = relabel(r"(1,-2)")
-        self.add(point, label)
+        self.point_label = relabel(r"(1,-2)")
+        self.add(self.point, self.point_label)
         self.wait(PACING["hold_pad"])
 
         def update_caption(new_text_str: str):
@@ -285,13 +291,13 @@ class FinalAnimation(VoiceoverScene):
             mxp.set_color(HIL_VAR_X)
             mx_over_k.set_color(HIL_EXPR_X)
             g_inside.set_color(HIL_FUNC)
-            pulse(self, VGroup(mxp, mx_over_k, g_inside), run_time=0.35 if USE_PIPER else 0.4)
-            add_step_math(r"k<0")
+            self.play(pulse(VGroup(mxp, mx_over_k, g_inside)), run_time=0.35 if USE_PIPER else 0.4)
+            add_step_math(r"x' = \frac{1}{-1} = -1")
             target = self.axes.c2p(-1, -2)
             _purge_stray_dots()
-            self.play(point.animate.move_to(target), run_time=narr_time(tr))
+            self.play(self.point.animate.move_to(target), run_time=narr_time(tr))
             new_label = relabel(r"(-1,-2)")
-            self.play(label.animate.become(new_label))
+            self.play(self.point_label.animate.become(new_label))
             self.wait(PACING["hold_pad"])
 
         # 2) Translate left by 1   → d = -1
@@ -301,13 +307,13 @@ class FinalAnimation(VoiceoverScene):
             mxp.set_color(HIL_VAR_X)
             md.set_color(HIL_EXPR_X)
             g_inside.set_color(HIL_FUNC)
-            pulse(self, VGroup(md, g_inside), run_time=0.35 if USE_PIPER else 0.4)
-            add_step_math(r"d=-1")
+            self.play(pulse(VGroup(md, g_inside)), run_time=0.35 if USE_PIPER else 0.4)
+            add_step_math(r"x'' = -1 + (-1) = -2")
             target = self.axes.c2p(-2, -2)
             _purge_stray_dots()
-            self.play(point.animate.move_to(target), run_time=narr_time(tr))
+            self.play(self.point.animate.move_to(target), run_time=narr_time(tr))
             new_label = relabel(r"(-2,-2)")
-            self.play(label.animate.become(new_label))
+            self.play(self.point_label.animate.become(new_label))
             self.wait(PACING["hold_pad"])
 
         # 3) Reflect across x-axis → a < 0
@@ -317,13 +323,13 @@ class FinalAnimation(VoiceoverScene):
             myp.set_color(HIL_VAR_Y)
             may.set_color(HIL_EXPR_Y)
             g_minus.set_color(HIL_FUNC)
-            pulse(self, VGroup(myp, may, g_minus), run_time=0.35 if USE_PIPER else 0.4)
-            add_step_math(r"a<0")
+            self.play(pulse(VGroup(myp, may, g_minus)), run_time=0.35 if USE_PIPER else 0.4)
+            add_step_math(r"y' = (-1) \cdot (-2) = 2")
             target = self.axes.c2p(-2, 2)
             _purge_stray_dots()
-            self.play(point.animate.move_to(target), run_time=narr_time(tr))
+            self.play(self.point.animate.move_to(target), run_time=narr_time(tr))
             new_label = relabel(r"(-2,2)")
-            self.play(label.animate.become(new_label))
+            self.play(self.point_label.animate.become(new_label))
             self.wait(PACING["hold_pad"])
 
         # 4) Translate up by 3     → c = 3
@@ -333,16 +339,37 @@ class FinalAnimation(VoiceoverScene):
             myp.set_color(HIL_VAR_Y)
             mc.set_color(HIL_EXPR_Y)
             g_plus3.set_color(HIL_FUNC)
-            pulse(self, VGroup(mc, g_plus3), run_time=0.35 if USE_PIPER else 0.4)
-            add_step_math(r"c=3")
+            self.play(pulse(VGroup(mc, g_plus3)), run_time=0.35 if USE_PIPER else 0.4)
+            add_step_math(r"y'' = 2 + 3 = 5")
             target = self.axes.c2p(-2, 5)
             _purge_stray_dots()
-            self.play(point.animate.move_to(target), run_time=narr_time(tr))
+            self.play(self.point.animate.move_to(target), run_time=narr_time(tr))
             new_label = relabel(r"(-2,5)", color=PALETTE["final"])
-            self.play(label.animate.become(new_label))
-            self.play(point.animate.set_color(PALETTE["final"]))
+            self.play(self.point_label.animate.become(new_label))
+            self.play(self.point.animate.set_color(PALETTE["final"]))
             self.wait(PACING["hold_pad"])
 
         if DEBUG:
-            _guard_no_lingering_updaters(point)
-            _guard_no_lingering_updaters(label)
+            _guard_no_lingering_updaters(self.point)
+            _guard_no_lingering_updaters(self.point_label)
+
+    def outro_scene(self):
+        self.wait(0.5)
+        with self.voiceover(text=VO["wrap"]) if USE_PIPER else nullcontext() as tr:
+            run_time = narr_time(tr, min_rt=1.5) if USE_PIPER else 1.5
+            summary_box = SurroundingRectangle(
+                VGroup(self.right_column, self.steps_panel),
+                buff=0.3,
+                color=PALETTE["path"],
+                corner_radius=0.2
+            )
+            self.play(
+                Create(summary_box),
+                pulse(self.point, run_time=1.2),
+                pulse(self.point_label, run_time=1.2),
+                run_time=run_time
+            )
+        
+        self.wait(2.0)
+        self.play(FadeOut(*self.mobjects), run_time=1.0)
+        self.wait(1.0)
