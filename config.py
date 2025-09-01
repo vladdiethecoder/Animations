@@ -36,13 +36,6 @@ SEED = 7
 FPS = 30
 RESOLUTION = (1920, 1080)
 
-# Manim global settings (for Manim v0.18.1)
-config.quality = "example_quality"
-config.frame_rate = 30
-config.pixel_height = 1080
-config.pixel_width = 1920
-config.background_color = "#0e1a25"
-
 # =============================
 # Color Palette
 # =============================

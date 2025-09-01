@@ -71,10 +71,6 @@ def _guard_no_lingering_updaters(mobj: Mobject):
 def _set_determinism():
     random.seed(RANDOM_SEED)
     np.random.seed(RANDOM_SEED)
-    config.frame_rate = 30
-    config.pixel_height = 1080
-    config.pixel_width = 1920
-
 
 # Quadrant-aware label placement
 LABEL_BUFF = 0.32
