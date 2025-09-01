@@ -40,6 +40,10 @@ PACING = {
 # Voiceover Content (VO)
 # =============================
 VO = {
+    "theory_intro": "Here is the transformation map from functions to points...",
+    "theory_x":     "First, x prime equals x over k plus d. This comes from the horizontal parameters...",
+    "theory_y":     "Next, y prime equals a y plus c. These are the vertical parameters...",
+    "theory_bullets": "Inside operations act on x; outside operations act on y; reflections occur when a or k are negative.",
     "theory": (
         "Here is the transformation framework. "
         "For a new function g of x equals a times f of k times x minus d, plus c, "
