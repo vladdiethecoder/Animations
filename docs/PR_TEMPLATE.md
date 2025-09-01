@@ -22,8 +22,9 @@ Reviewers must confirm each item before merging.
 - [ ] Relevant entries from `CODEBASEDOCUMENTATION.md` cited.
 - [ ] Drift Score computed; drift >5% justified + repaired.
 
-## Implementation (Pass 2 — snippet-only edits)
-- [ ] Changes delivered as **unified diff** or **anchor-based patch**.
+## Implementation (Pass 2 — snippet or file output)
+- [ ] Default: delivered as **unified diff** or **anchor-based patch**.  
+- [ ] If **entire file was output**, it was explicitly requested and justified.  
 - [ ] Instructions Block included: File(s), Where, Why (Checkpoints/FMs), How to apply, Rollback.
 - [ ] Efficiency Gauge reported:
   - Lines changed (+ / -)
@@ -52,7 +53,7 @@ Reviewers must confirm each item before merging.
 ## Documentation
 - [ ] `CODEBASEDOCUMENTATION.md` updated for any new classes/objects/functions used.
 - [ ] Extended guidelines (`WORKFLOW_EXTENDED.md`) applied where relevant.
-- [ ] References to raw GitHub links from `FILE_INDEX.md` or `RAW_LINKS.md` included if files were touched.
+- [ ] References to raw GitHub links from `FILE_INDEX.md` included if files were touched.
 
 ## Drift & Overrides
 - [ ] Drift Score (%) reported after planning + implementation.
@@ -62,4 +63,4 @@ Reviewers must confirm each item before merging.
 
 ---
 
-✅ Sign-off means: this PR passed all gates, preserved checkpoints, controlled drift, updated docs, and delivered snippet-only edits tied to v0.19.0.
+✅ Sign-off means: this PR passed all gates, preserved checkpoints, controlled drift, updated docs, and delivered snippet-only or full-file edits under explicit request.

@@ -84,3 +84,37 @@ class PiperService(SpeechService):
             raise RuntimeError(f"ffmpeg failed converting WAV->MP3.\nSTDOUT:\n{proc2.stdout.decode(errors='ignore')}\nSTDERR:\n{proc2.stderr.decode(errors='ignore')}")
         rel_mp3 = os.path.relpath(mp3_path, cache_dir).replace("\\", "/")
         return {"path": mp3_path, "original_audio": rel_mp3, "input_data": {"input_text": text}}
+    
+# ─────────────────────────────────────────────────────────────────────────────
+# HighlightController
+# Keeps original colors, lets us clear all highlights before a new narration beat
+# Compatible with Manim CE v0.19.0
+# ─────────────────────────────────────────────────────────────────────────────
+class HighlightController:
+    def __init__(self):
+        self._tracked = []
+
+    def track(self, *mobjects: Mobject):
+        \"\"\"Register mobjects so we can restore their original color later.\"\"\"
+        for m in mobjects:
+            if m is None:
+                continue
+            # Store (mobject, original_color)
+            self._tracked.append((m, m.get_color()))
+        return self
+
+    def highlight(self, mobjects, color=YELLOW, run_time=0.3):
+        \"\"\"Set color on a sequence of mobjects with a short animation.\"\"\"
+        anims = []
+       for m in mobjects:
+            if m is None:
+                continue
+            anims.append(m.animate.set_color(color))
+        return AnimationGroup(*anims, lag_ratio=0.05, run_time=run_time)
+
+    def clear(self, run_time=0.3):
+        \"\"\"Restore original colors for all tracked mobjects.\"\"\"
+        anims = []
+        for m, original in self._tracked:
+            anims.append(m.animate.set_color(original))
+        return AnimationGroup(*anims, lag_ratio=0.02, run_time=run_time)
