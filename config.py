@@ -1,5 +1,8 @@
 # config.py
+# [CHECKPOINT-1..5 Active; Mirrors CHECKPOINTS.md]
+# Project-wide constants (Manim CE v0.19.0)
 
+from __future__ import annotations
 from manim import *
 
 # =============================
@@ -7,6 +10,31 @@ from manim import *
 # =============================
 USE_PIPER = True
 RANDOM_SEED = 7
+
+# ---- Layout anchors (scene coordinates) ----
+# WHY: Hard coordinates prevent drift (FM-3, FM-8) vs to_edge()/to_corner() dynamics.
+ANCHOR_STEPS = (5.3, -3.0, 0)       # bottom-right area for StepsPanel
+ANCHOR_RIGHT_PANE = (5.3, 1.5, 0)   # right-side transform mirror
+PANEL_WIDTH = 5.5
+PANEL_PADDING = 0.25
+LINE_SPACING = 0.5
+
+# ---- Styling ----
+FONT_SIZE_MAIN = 36         # >=28px @1080p (Checkpoint-2 Readability)
+FONT_SIZE_STEPS = 30
+FONT_SIZE_RIGHT = 32
+
+# Highlight style (Checkpoint-2; FM-4 z-order handled in controller)
+HIGHLIGHT_COLOR = "#00D1FF"
+HIGHLIGHT_STROKE = 4
+HIGHLIGHT_FILL_OPACITY = 0.0
+HIGHLIGHT_BUFF = 0.08
+HIGHLIGHT_Z = 15
+
+# Determinism defaults (Checkpoint-3)
+SEED = 7
+FPS = 30
+RESOLUTION = (1920, 1080)
 
 # Manim global settings (for Manim v0.18.1)
 config.quality = "example_quality"

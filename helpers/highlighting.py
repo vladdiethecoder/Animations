@@ -1,73 +1,45 @@
+# [CHECKPOINT-1..5 Active; Mirrors CHECKPOINTS.md]
+# WHY: Centralized highlight control avoids FM-2 (lingering updaters) and FM-4 (z-order).
+# Manim CE v0.19.0-compatible.
 from __future__ import annotations
-from typing import Dict, Iterable, Set
-from manim import *
+from typing import Iterable, List, Optional
+from manim import VGroup, SurroundingRectangle, AnimationGroup, FadeOut, Create
 
-class Highlighter:
+
+class HighlightGroupController:
     """
-    v0.19.0-safe highlight controller.
-    Register mobjects under one or more tags, then call highlight_only(tags).
+    Ensures only ONE highlight group is active at a time.
+    - activate(targets): clears previous, highlights new targets
+    - clear(): remove current highlights
+    WHY: Checkpoint-1 Regression Guard; FM-2/4 safety.
     """
-    def __init__(self, scene: Scene, dim_opacity: float = 0.35, bright_opacity: float = 1.0,
-                 dim_scale: float = 1.00, bright_scale: float = 1.00,
-                 bright_color: str = YELLOW, dim_color: str | None = None,
-                 run_time: float = 0.35):
+    def __init__(self, scene, color, stroke_width=4, fill_opacity=0.0, buff=0.08, z_index=10):
         self.scene = scene
-        self.run_time = run_time
-        self.dim_opacity = dim_opacity
-        self.bright_opacity = bright_opacity
-        self.dim_scale = dim_scale
-        self.bright_scale = bright_scale
-        self.bright_color = bright_color
-        self.dim_color = dim_color
-        self._registry: Dict[str, VGroup] = {}
+        self.style = dict(color=color, stroke_width=stroke_width, fill_opacity=fill_opacity, buff=buff)
+        self.active: Optional[VGroup] = None
+        self.z_index = z_index
 
-    def register(self, tag: str, *mobs: Mobject) -> None:
-        if tag not in self._registry:
-            self._registry[tag] = VGroup()
-        self._registry[tag].add(*mobs)
+    def _build_group(self, targets: Iterable) -> VGroup:
+        boxes: List[SurroundingRectangle] = []
+        for t in targets:
+            rect = SurroundingRectangle(t, **self.style)
+            rect.set_z_index(self.z_index)
+            boxes.append(rect)
+        return VGroup(*boxes)
 
-    def register_many(self, mapping: Dict[str, Iterable[Mobject]]) -> None:
-        for tag, it in mapping.items():
-            self.register(tag, *list(it))
+    def clear(self, fade_time: float = 0.2):
+        if self.active:
+            self.scene.play(AnimationGroup(*(FadeOut(m) for m in self.active), lag_ratio=0.0, run_time=fade_time))
+            for m in list(self.active):
+                try:
+                    self.scene.remove(m)
+                except Exception:
+                    pass
+            self.active = None
 
-    def all_mobs(self) -> VGroup:
-        vg = VGroup()
-        for g in self._registry.values():
-            vg.add(*g.submobjects)
-        return vg
-
-    def unhighlight_all(self) -> AnimationGroup:
-        anims = []
-        for mob in self.all_mobs():
-            anims.append(
-                AnimationGroup(
-                    mob.animate.set_opacity(self.dim_opacity).set_sheen(0),
-                    mob.animate.scale(self.dim_scale),
-                )
-            )
-            if self.dim_color is not None:
-                anims[-1].animations.append(mob.animate.set_color(self.dim_color))
-        return AnimationGroup(*anims, lag_ratio=0.0, run_time=self.run_time)
-
-    def highlight_only(self, tags: Iterable[str]) -> AnimationGroup:
-        tags_set: Set[str] = set(tags)
-        on = VGroup()
-        for t in tags_set:
-            if t in self._registry:
-                on.add(*self._registry[t].submobjects)
-        off = VGroup(*[m for m in self.all_mobs() if m not in on.submobjects])
-
-        anims = []
-        # Dim non-selected
-        for mob in off:
-            anims.append(mob.animate.set_opacity(self.dim_opacity).scale(self.dim_scale))
-            if self.dim_color is not None:
-                anims[-1].set_anim_args(run_time=self.run_time)
-        # Brighten selected
-        for mob in on:
-            anims.append(
-                mob.animate.set_opacity(self.bright_opacity)
-                   .set_color(self.bright_color)
-                   .scale(self.bright_scale)
-            )
-        return AnimationGroup(*anims, lag_ratio=0.0, run_time=self.run_time, rate_func=smooth)
+    def activate(self, targets: Iterable, run_time: float = 0.25):
+        self.clear(fade_time=0.1)
+        group = self._build_group(targets)
+        self.active = group
+        self.scene.add(group)
+        self.scene.play(AnimationGroup(*(Create(m) for m in group), lag_ratio=0.05, run_time=run_time))
