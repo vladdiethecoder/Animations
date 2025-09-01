@@ -1,15 +1,10 @@
 # utils.py
-# [CHECKPOINT-1..5 Active; Mirrors CHECKPOINTS.md]
 
-from __future__ import annotations
-from typing import Iterable, List, Tuple
-import numpy as np
 from manim import *
 from manim_voiceover.services.base import SpeechService
 import os
 import subprocess
 import glob
-import config as CFG
 from config import PACING
 
 # =============================
@@ -90,90 +85,36 @@ class PiperService(SpeechService):
         rel_mp3 = os.path.relpath(mp3_path, cache_dir).replace("\\", "/")
         return {"path": mp3_path, "original_audio": rel_mp3, "input_data": {"input_text": text}}
     
-# ---- Determinism helper (Checkpoint-3) ----
-def _set_determinism(scene):
-    # NOTE: In CE 0.19.0, seeding numpy is sufficient for most randomness in layout jitters.
-    np.random.seed(CFG.SEED)
+# ─────────────────────────────────────────────────────────────────────────────
+# HighlightController
+# Keeps original colors, lets us clear all highlights before a new narration beat
+# Compatible with Manim CE v0.19.0
+# ─────────────────────────────────────────────────────────────────────────────
+class HighlightController:
+    def __init__(self):
+        self._tracked = []
 
-# ---- Steps Panel (bottom-right, hard coordinates) ----
-class StepsPanel(VGroup):
-    def __init__(self, title: str = "Steps", width: float = CFG.PANEL_WIDTH, **kwargs):
-        super().__init__(**kwargs)
-        self.width = width
-        self.bg = RoundedRectangle(corner_radius=0.2, width=width, height=3.8)
-        self.title = Text(title, font_size=CFG.FONT_SIZE_STEPS)
-        self.title.next_to(self.bg.get_top(), direction=np.array([0, -1, 0]), buff=0.15)
-        self.lines = VGroup()
-        self.add(self.bg, self.title, self.lines)
-        self.move_to(CFG.ANCHOR_STEPS)
-        self._next_y = self.title.get_bottom()[1] - 0.35
+    def track(self, *mobjects: Mobject):
+        """Register mobjects so we can restore their original color later."""
+        for m in mobjects:
+            if m is None:
+                continue
+            # Store (mobject, original_color)
+            self._tracked.append((m, m.get_color()))
+        return self
 
-    def add_line(self, latex: str):
-        idx = len(self.lines) + 1
-        m = MathTex(rf"{idx}.\; {latex}", font_size=CFG.FONT_SIZE_STEPS)
-        # Fixed-width panel; multiline will wrap via MathTex layout; we stack by y.
-        m.align_to(self.bg, direction=np.array([-1, 0, 0])).shift(np.array([CFG.PANEL_PADDING - self.bg.width/2 + 0.3, 0, 0]))
-        if idx == 1:
-            m.next_to(self.title, direction=np.array([0, -1, 0]), buff=0.25)
-        else:
-            m.next_to(self.lines[-1], direction=np.array([0, -1, 0]), buff=CFG.LINE_SPACING)
-        self.lines.add(m)
-        m.set_opacity(0.0)
-        return m  # return for staged reveal
+    def highlight(self, mobjects, color=YELLOW, run_time=0.3):
+        """Set color on a sequence of mobjects with a short animation."""
+        anims = []
+        for m in mobjects:
+            if m is None:
+                continue
+            anims.append(m.animate.set_color(color))
+        return AnimationGroup(*anims, lag_ratio=0.05, run_time=run_time)
 
-    def reveal_last(self, run_time: float = 0.2):
-        if len(self.lines) == 0:
-            return
-        self.scene.play(FadeIn(self.lines[-1], run_time=run_time))
-
-    @property
-    def scene(self):
-        # Convenience to access scene play() in reveal methods via self.get_scene()
-        # In practice we will call animations from the Scene directly; property kept for symmetry.
-        from manim import Scene
-        Scene  # silence lint
-        # Real scene reference is not stored; callers should play on Scene.
-        return None
-
-# ---- Right Transform Pane ----
-class RightTransformPane(VGroup):
-    def __init__(self, title: str = "Transform", width: float = CFG.PANEL_WIDTH, **kwargs):
-        super().__init__(**kwargs)
-        self.width = width
-        self.bg = RoundedRectangle(corner_radius=0.2, width=width, height=3.5)
-        self.title = Text(title, font_size=CFG.FONT_SIZE_RIGHT)
-        self.title.next_to(self.bg.get_top(), direction=np.array([0, -1, 0]), buff=0.15)
-        self.slot = VGroup()  # where we place the per-step token/equation fragment
-        self.add(self.bg, self.title, self.slot)
-        self.move_to(CFG.ANCHOR_RIGHT_PANE)
-
-    def show_fragment(self, *tex_strings: str, scene=None, run_time: float = 0.25):
-        new_line = MathTex(*tex_strings, font_size=CFG.FONT_SIZE_RIGHT)
-        new_line.next_to(self.title, direction=np.array([0, -1, 0]), buff=0.25)
-        if len(self.slot) > 0:
-            old = self.slot[-1]
-            if scene:
-                scene.play(FadeIn(new_line, run_time=run_time))
-                scene.remove(old)
-        else:
-            if scene:
-                scene.play(FadeIn(new_line, run_time=run_time))
-        self.slot.add(new_line)
-        return new_line
-
-# ---- Token helpers ----
-def parts_by_substrings(mathtex: MathTex, substrings: Iterable[str]) -> List:
-    """Return a list of submobjects that match any given TeX substring(s)."""
-    hits = []
-    for s in substrings:
-        try:
-            hits.extend(mathtex.get_parts_by_tex(s))
-        except Exception:
-            pass
-    # De-dupe while keeping order
-    seen = set()
-    uniq = []
-    for m in hits:
-        if id(m) not in seen:
-            uniq.append(m); seen.add(id(m))
-    return uniq
+    def clear(self, run_time=0.3):
+        """Restore original colors for all tracked mobjects."""
+        anims = []
+        for m, original in self._tracked:
+            anims.append(m.animate.set_color(original))
+        return AnimationGroup(*anims, lag_ratio=0.02, run_time=run_time)
