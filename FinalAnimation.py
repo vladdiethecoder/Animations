@@ -14,25 +14,8 @@ import random
 from contextlib import nullcontext
 
 import numpy as np
-from manim import (
-    BLACK,
-    DR, DL, UL, UR,
-    LEFT, RIGHT, UP, DOWN,
-    Axes,
-    Create,
-    Dot,
-    FadeIn,
-    FadeOut,
-    Indicate,
-    LaggedStart,
-    Mobject,
-    NumberPlane,
-    Tex,
-    VGroup,
-    Write,
-    config,
-    MathTex,
-)
+from manim import *
+from helpers.highlighting import Highlighter
 from manim_voiceover import VoiceoverScene
 
 from config import USE_PIPER, RANDOM_SEED, PALETTE, PACING, VO
